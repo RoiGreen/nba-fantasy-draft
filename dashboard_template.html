@@ -745,19 +745,35 @@ function renderAdv() {
     return st.advAsc ? c : -c;
   });
 
-  $("advHead").innerHTML = ADV_COLS.map((c) => {
+  // Sorting by a stat adds that stat's league rank (1 = highest) at the right edge
+  const statCol = ["USG", "PACE", "ORTG", "TPACE", "gp", "min"].includes(st.advSort)
+    ? ADV_COLS.find((c) => c.k === st.advSort) : null;
+  let statRank = null;
+  if (statCol) {
+    const vals = list.map((p) => key(p)).filter((v) => v != null && v !== -Infinity).sort((a, b) => b - a);
+    statRank = (p) => {
+      const v = key(p);
+      if (v == null || v === -Infinity) return "–";
+      let lo = 0, hi = vals.length;  // count of values strictly greater than v
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (vals[mid] > v) lo = mid + 1; else hi = mid; }
+      return lo + 1;
+    };
+  }
+
+  $("advHead").innerHTML = (statCol ? `<th class="nosort" scope="col">${esc(statCol.l)} RANK</th>` : "") + ADV_COLS.map((c) => {
     const cls = [st.advSort === c.k ? "sorted" : "", st.advSort === c.k && st.advAsc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : ""].join(" ");
     return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.l)}</th>`;
   }).join("");
   $("advBody").innerHTML = rows.map((p) => {
     const cell = (k) => { const v = advVal(p, k); return `<td style="${heats[k](v)}">${v == null ? "–" : v.toFixed(1)}</td>`; };
     return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
+      ${statRank ? `<td class="rank" style="color:var(--accent)">${statRank(p)}</td>` : ""}
       <td class="rank">${now.rank.get(p.id)}</td>
       ${nameCell(p)}
       <td>${p.gp}</td><td>${fmt1(p.L.g.MIN)}</td>
       ${cell("USG")}${cell("PACE")}${cell("ORTG")}${cell("TPACE")}
       <td class="acts">${actions(p)}</td></tr>`;
-  }).join("") || EMPTY_ROW(ADV_COLS.length);
+  }).join("") || EMPTY_ROW(ADV_COLS.length + (statCol ? 1 : 0));
 
   // Teams: lower DRTG is better, so its shading is inverted
   const TCOLS = [{ k: "PACE", l: "PACE" }, { k: "OFF_RATING", l: "ORTG" }, { k: "DEF_RATING", l: "DRTG", inv: true }, { k: "NET_RATING", l: "NET" }];
