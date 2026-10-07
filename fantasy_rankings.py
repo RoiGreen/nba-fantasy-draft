@@ -22,7 +22,7 @@ OUT = HERE / "fantasy_rankings_2026_27.csv"
 
 MIN_GP = 50
 PER_MINUTES = 36
-POOL_SIZE = 156  # 12 teams x 13 roster spots
+POOL_SIZE = 104  # 8 teams x 13 roster spots
 
 COUNTING_CATS = ["PTS", "REB", "AST", "STL", "BLK", "FG3M"]
 VOLUME_STATS = [*COUNTING_CATS, "TOV", "FGM", "FGA", "FTM", "FTA"]
