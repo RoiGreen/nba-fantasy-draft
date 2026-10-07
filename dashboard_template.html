@@ -436,7 +436,7 @@ const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 2,
   q: "", minGp: 50, minMin: 0, pos: new Set(), team: "", maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
-  sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false,
+  sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false,
 };
 let taken = new Set(), mine = new Set(), fav = new Set();
 // Every "taken" / "mine" click in draft order: [{ id, who: "t" | "m" }]
@@ -566,9 +566,8 @@ function passes(p) {
 function render() {
   const { list, now } = last;
   const m = st.mode;
-  let rows = list.map((p) => ({
-    p, rank: now.rank.get(p.id), z: now.z.get(p.id),
-  })).filter(({ p }) => passes(p));
+  const allRows = list.map((p) => ({ p, rank: now.rank.get(p.id), z: now.z.get(p.id) }));
+  let rows = allRows.filter(({ p }) => passes(p));
 
   const key = (r) => {
     switch (st.sort) {
@@ -588,8 +587,25 @@ function render() {
     return st.asc ? c : -c;
   });
 
+  // Sorting by a stat adds that stat's rank at the right edge (1 = best; for TOV the fewest)
+  const best = (r) => {
+    switch (st.sort) {
+      case "gp": return r.p.gp;
+      case "avail": return availPct(r.p);
+      case "zTotal": return r.z.total;
+      case "fp": return r.p.F[m];
+      case "MIN": return r.p.L.g.MIN;
+      case "FG_RAW": return r.p.L[m].FG_PCT;
+      case "FT_RAW": return r.p.L[m].FT_PCT;
+      default: return CATS.some((c) => c.k === st.sort) ? r.z.z[st.sort] : null;
+    }
+  };
+  const statLabel = { FG_RAW: "FG%", FT_RAW: "FT%" }[st.sort] ||
+    (["rank", "name", "age"].includes(st.sort) ? null : COLS.find((c) => c.k === st.sort)?.l);
+  const statRank = statLabel ? rankerFor(allRows.map(best)) : null;
+
   // header
-  $("head").innerHTML = COLS.map((c) => {
+  $("head").innerHTML = (statLabel ? `<th class="nosort" scope="col">${esc(statLabel)} RANK</th>` : "") + COLS.map((c) => {
     const label = c.k === "rank" ? (m === "g" ? "RANK" : "RANK 36 MIN") : c.l;
     const cls = [st.sort === c.k ? "sorted" : "", st.sort === c.k && st.asc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : "",
                  c.cat && st.fmt === "cat" && st.punts.has(c.k) ? "punted" : ""].join(" ");
@@ -605,12 +621,13 @@ function render() {
       return `<td class="cat${punted}" style="${heat(z.z[c.k])}">${v}</td>`;
     }).join("");
     return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
+      ${statRank ? `<td class="rank" style="color:var(--accent)">${statRank(best({ p, z }))}</td>` : ""}
       <td class="rank">${rank}</td>
       ${nameCell(p)}
       <td>${p.age ?? "–"}</td><td>${p.gp}</td>${availCell(p)}<td>${fmt1(p.L.g.MIN)}</td>${cats}
       <td class="val">${z.total.toFixed(2)}</td><td class="val">${fmt1(p.F[m])}</td>
       <td class="acts">${actions(p)}</td></tr>`;
-  }).join("") || EMPTY_ROW(COLS.length);
+  }).join("") || EMPTY_ROW(COLS.length + (statRank ? 1 : 0));
 
   // counts
   const avail = list.filter((p) => !taken.has(p.id) && !mine.has(p.id)).length;
@@ -658,6 +675,17 @@ function availCell(p) {
   const style = pct >= 0.85 ? `background:color-mix(in srgb, var(--pos) ${Math.round((pct - 0.85) / 0.15 * 35 + 8)}%, transparent)`
     : pct < 0.65 ? `background:color-mix(in srgb, var(--neg) ${Math.round(Math.min((0.65 - pct) / 0.4, 1) * 35 + 8)}%, transparent)` : "";
   return `<td style="${style}" title="משחקים לפי עונה: ${detail}${seasons < 3 ? ` (רק ${seasons === 1 ? "עונה אחת" : seasons + " עונות"} בליגה)` : ""}">${Math.round(pct * 100)}%</td>`;
+}
+
+// Rank of each value among all values, 1 = best (higher is better; pass already-flipped values)
+function rankerFor(values) {
+  const vals = values.filter((v) => v != null && Number.isFinite(v)).sort((a, b) => b - a);
+  return (v) => {
+    if (v == null || !Number.isFinite(v)) return "–";
+    let lo = 0, hi = vals.length;  // how many values are strictly better
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (vals[mid] > v) lo = mid + 1; else hi = mid; }
+    return lo + 1;
+  };
 }
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
@@ -757,12 +785,19 @@ function renderAdv() {
 
   // Teams: lower DRTG is better, so its shading is inverted
   const TCOLS = [{ k: "PACE", l: "PACE" }, { k: "OFF_RATING", l: "ORTG" }, { k: "DEF_RATING", l: "DRTG", inv: true }, { k: "NET_RATING", l: "NET" }];
-  const teams = [...(D.teams || [])].sort((a, b) => b.PACE - a.PACE);
   const sign = (c) => (c.inv ? -1 : 1);
+  const tcol = TCOLS.find((c) => c.k === st.teamSort) || TCOLS[0];
+  const teams = [...(D.teams || [])].sort((a, b) => (st.teamAsc ? 1 : -1) * sign(tcol) * (a[tcol.k] - b[tcol.k]));
   const th = Object.fromEntries(TCOLS.map((c) => [c.k, percentileHeat(teams.map((t) => sign(c) * t[c.k]))]));
-  $("teamHead").innerHTML = `<th class="nosort" scope="col">קבוצה</th>` + TCOLS.map((c) => `<th class="nosort" scope="col">${c.l}</th>`).join("");
+  const teamRank = rankerFor(teams.map((t) => sign(tcol) * t[tcol.k]));
+  $("teamHead").innerHTML = `<th class="nosort" scope="col">${tcol.l} RANK</th><th class="nosort" scope="col">קבוצה</th>` +
+    TCOLS.map((c) => {
+      const cls = [st.teamSort === c.k ? "sorted" : "", st.teamSort === c.k && st.teamAsc ? "asc" : ""].join(" ");
+      return `<th class="${cls}" tabindex="0" data-tk="${c.k}" scope="col">${c.l}</th>`;
+    }).join("");
   $("teamBody").innerHTML = teams.map((t) =>
-    `<tr><td class="name"><span class="n">${esc(t.t || "")}</span><span class="t">${esc(t.name)}</span></td>` +
+    `<tr><td class="rank" style="color:var(--accent)">${teamRank(sign(tcol) * t[tcol.k])}</td>` +
+    `<td class="name"><span class="n">${esc(t.t || "")}</span><span class="t">${esc(t.name)}</span></td>` +
     TCOLS.map((c) => `<td style="${th[c.k](sign(c) * t[c.k])}">${c.k === "NET_RATING" && t[c.k] > 0 ? "+" : ""}${t[c.k].toFixed(1)}</td>`).join("") +
     `</tr>`).join("");
 }
@@ -1050,8 +1085,13 @@ const teams = [...new Set(players.map((p) => p.team26).filter(Boolean))].sort();
 $("team").innerHTML = `<option value="">כל הקבוצות</option>` + teams.map((t) => `<option>${t}</option>`).join("") + `<option value="-">ללא קבוצה (FA)</option>`;
 
 document.addEventListener("click", (e) => {
-  const t = e.target.closest("button, th[data-k], th[data-ak]");
+  const t = e.target.closest("button, th[data-k], th[data-ak], th[data-tk]");
   if (!t) return;
+  if (t.dataset.tk) {
+    // first click on a column shows the best first (lowest DRTG, highest of the rest)
+    if (st.teamSort === t.dataset.tk) st.teamAsc = !st.teamAsc; else { st.teamSort = t.dataset.tk; st.teamAsc = false; }
+    return update(false);
+  }
   if (t.dataset.role) {
     const r = t.dataset.role;
     st.roles = st.roles.includes(r) ? st.roles.filter((x) => x !== r) : [...st.roles, r];
@@ -1090,7 +1130,7 @@ document.addEventListener("click", (e) => {
   }
 });
 document.addEventListener("keydown", (e) => {
-  if ((e.key === "Enter" || e.key === " ") && e.target.matches("th[data-k], th[data-ak]")) { e.preventDefault(); e.target.click(); }
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches("th[data-k], th[data-ak], th[data-tk]")) { e.preventDefault(); e.target.click(); }
 });
 
 let resetTimer = null;
