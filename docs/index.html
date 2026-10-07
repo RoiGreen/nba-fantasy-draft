@@ -123,6 +123,7 @@ td.name .moved b { color: var(--ink); font-weight: 700; }
 td.rank { font-weight: 700; font-size: 1.05rem; }
 td.alt { color: var(--muted); }
 td.val { font-weight: 700; font-size: 1.05rem; }
+td.weak span { direction: ltr; unicode-bidi: isolate; display: inline-block; }
 td.up { color: var(--pos); } td.down { color: var(--neg); }
 td.cat.punted { opacity: .35; }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--sunk) 60%, transparent); }
@@ -369,6 +370,7 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
         <span><span class="sw" style="background:color-mix(in srgb, var(--pos) 38%, transparent)"></span>חזק בקטגוריה</span>
         <span><span class="sw" style="background:color-mix(in srgb, var(--neg) 38%, transparent)"></span>חלש בקטגוריה</span>
         <span><b>Z</b> = כמה השחקן טוב מהשחקן הממוצע שנבחר בדראפט, בסכום כל הקטגוריות. 0 זה ממוצע, וככל שגבוה יותר הוא שווה יותר</span>
+        <span><b>חיוביות</b> = בכמה קטגוריות השחקן מעל הממוצע · <b>חולשה</b> = הקטגוריה הכי חלשה שלו. קטגוריות ב־Punt לא נספרות</span>
         <span>פער = כמה מקומות השחקן עולה כשמנרמלים ל־36 דקות</span>
         <span><span class="rk">R #3</span> רוקי ומקום הבחירה בדראפט. המספרים הם תחזית</span>
         <span><span class="inj" style="margin:0">24-25</span> נפצע בעונה שעברה, מוצגת העונה המלאה האחרונה שלו</span>
@@ -549,7 +551,8 @@ const COLS = [
   { k: "name", l: "שחקן", asc: true }, { k: "age", l: "גיל", asc: true }, { k: "gp", l: "GP", asc: false },
   { k: "MIN", l: "MIN", asc: false },
   ...CATS.map((c) => ({ k: c.k, l: c.l, asc: c.k === "TOV", cat: true })),
-  { k: "zTotal", l: "Z", asc: false }, { k: "fp", l: "FPTS", asc: false },
+  { k: "zTotal", l: "Z", asc: false }, { k: "vers", l: "חיוביות", asc: false }, { k: "weak", l: "חולשה", asc: false },
+  { k: "fp", l: "FPTS", asc: false },
   { k: "trend", l: "מגמה", asc: false }, { k: "act", l: "", nosort: true },
 ];
 
@@ -589,7 +592,9 @@ function render() {
     switch (st.sort) {
       case "rank": return r.rank; case "rankAlt": return r.rankAlt; case "gap": return r.gap;
       case "name": return r.p.name; case "age": return r.p.age; case "gp": return r.p.gp;
-      case "zTotal": return r.z.total; case "fp": return r.p.F[m];
+      case "zTotal": return r.z.total;
+      case "vers": { const v = versatility(r.z); return v.pos * 1000 + v.min; }
+      case "weak": return versatility(r.z).min; case "fp": return r.p.F[m];
       case "MIN": return r.p.L.g.MIN;
       case "FG_RAW": return r.p.L[m].FG_PCT; case "FT_RAW": return r.p.L[m].FT_PCT;
       case "trend": return r.p.trend ? r.p.trend[m] : -Infinity;
@@ -626,7 +631,7 @@ function render() {
       <td class="${gap >= SLEEPER_GAP ? "up" : gap <= -SLEEPER_GAP ? "down" : "alt"}">${gap > 0 ? "+" : ""}${gap}</td>
       ${nameCell(p)}
       <td>${p.age ?? "–"}</td><td>${p.gp}</td><td>${fmt1(p.L.g.MIN)}</td>${cats}
-      <td class="val">${z.total.toFixed(2)}</td><td class="val">${fmt1(p.F[m])}</td>
+      <td class="val">${z.total.toFixed(2)}</td>${versCells(z)}<td class="val">${fmt1(p.F[m])}</td>
       <td class="${tCls}" title="נקודות פנטזי למשחק אחרי האולסטאר פחות לפני האולסטאר">${trend == null ? "–" : (trend > 0 ? "+" : "") + fmt1(trend)}</td>
       <td class="acts">${actions(p)}</td></tr>`;
   }).join("") || EMPTY_ROW(COLS.length);
@@ -659,6 +664,28 @@ function nameCell(p) {
   const n = picks.findIndex((x) => x.id === p.id);
   const chip = n >= 0 ? `<span class="pickchip" title="בחירה ${n + 1} בדראפט">${pickLabel(n + 1)}</span>` : "";
   return `<td class="name"><div class="nc"><span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span></div></td>`;
+}
+
+// Versatility: categories above the draftable average, and the weakest one (punted ones skipped)
+function versatility(z) {
+  const cats = st.fmt === "cat" ? CATS.filter((c) => !st.punts.has(c.k)) : CATS;
+  let pos = 0, min = Infinity, weakest = null;
+  for (const c of cats) {
+    const v = z.z[c.k];
+    if (v > 0) pos++;
+    if (v < min) { min = v; weakest = c; }
+  }
+  return { pos, of: cats.length, min, weakest };
+}
+function versCells(z) {
+  const v = versatility(z);
+  const share = v.of ? v.pos / v.of : 0;
+  const vStyle = `background:color-mix(in srgb, var(--pos) ${Math.round(share * 40)}%, transparent)`;
+  const sev = v.min >= 0 ? 0 : Math.min(-v.min / 2.5, 1);
+  const wStyle = v.min >= 0 ? "color:var(--muted)" : `color:var(--neg);background:color-mix(in srgb, var(--neg) ${Math.round(sev * 35)}%, transparent)`;
+  const val = `${v.min >= 0 ? "+" : ""}${v.min.toFixed(1)}`;
+  return `<td style="${vStyle}" title="מעל הממוצע ב־${v.pos} מתוך ${v.of} קטגוריות">${v.pos}/${v.of}</td>` +
+    `<td class="weak" style="${wStyle}" title="הקטגוריה הכי חלשה של השחקן"><span>${v.weakest ? v.weakest.l : ""} ${val}</span></td>`;
 }
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
@@ -1097,6 +1124,8 @@ const SORT_OPTS = {
     { k: "rank", l: "דירוג", asc: true },
     { k: "zTotal", l: "ערך 9 קטגוריות (Z)", asc: false },
     { k: "fp", l: "נקודות פנטזי (FPTS)", asc: false },
+    { k: "vers", l: "ורסטיליות (כמה קטגוריות חיוביות)", asc: false },
+    { k: "weak", l: "חולשה (מהקטנה לגדולה)", asc: false },
     { k: "PTS", l: "נקודות (PTS)", asc: false },
     { k: "REB", l: "ריבאונדים (REB)", asc: false },
     { k: "AST", l: "אסיסטים (AST)", asc: false },
