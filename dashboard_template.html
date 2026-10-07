@@ -291,6 +291,14 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
           <input type="range" id="minMin" min="0" max="36" value="0">
         </div>
         <div class="field">
+          <span class="lbl">זמינות לפי עונות</span>
+          <div class="chips" role="group" aria-label="עונות לחישוב הזמינות">
+            <button class="chip" data-avs="2" aria-pressed="true">2025-26</button>
+            <button class="chip" data-avs="1" aria-pressed="true">2024-25</button>
+            <button class="chip" data-avs="0" aria-pressed="true">2023-24</button>
+          </div>
+        </div>
+        <div class="field">
           <span class="lbl">עמדה</span>
           <div class="chips" id="posChips">
             <button class="chip" data-pos="G" aria-pressed="false">G</button>
@@ -367,7 +375,7 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
       <div class="legend">
         <span><span class="sw" style="background:color-mix(in srgb, var(--pos) 38%, transparent)"></span>חזק בקטגוריה</span>
         <span><span class="sw" style="background:color-mix(in srgb, var(--neg) 38%, transparent)"></span>חלש בקטגוריה</span>
-        <span><b>זמינות</b> = אחוז המשחקים ששיחק ב־3 העונות האחרונות (רק עונות שבהן היה בליגה). מעבר עכבר מציג את המשחקים בכל עונה</span>
+        <span><b>זמינות</b> = אחוז המשחקים ששיחק בעונות שנבחרו (רק עונות שבהן היה בליגה). מעבר עכבר מציג את המשחקים בכל עונה</span>
         <span><b>Z</b> = כמה השחקן טוב מהשחקן הממוצע שנבחר בדראפט, בסכום כל הקטגוריות. 0 זה ממוצע, וככל שגבוה יותר הוא שווה יותר</span>
         <span><span class="rk">R #3</span> רוקי ומקום הבחירה בדראפט. המספרים הם תחזית</span>
         <span><span class="inj" style="margin:0">24-25</span> נפצע בעונה שעברה, מוצגת העונה המלאה האחרונה שלו</span>
@@ -436,7 +444,7 @@ const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 2,
   q: "", minGp: 50, minMin: 0, pos: new Set(), team: "", maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
-  sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false,
+  sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [0, 1, 2],
 };
 let taken = new Set(), mine = new Set(), fav = new Set();
 // Every "taken" / "mine" click in draft order: [{ id, who: "t" | "m" }]
@@ -661,20 +669,21 @@ function nameCell(p) {
 
 // Availability: share of the 82 games played over the last three seasons he was in the league
 const AVAIL_LABELS = ["23-24", "24-25", "25-26"];
+// Only the seasons picked under "זמינות לפי עונות" count
 function availPct(p) {
-  const seasons = (p.avail || []).filter((v) => v != null);
+  const seasons = (p.avail || []).filter((v, i) => v != null && st.availSeasons.includes(i));
   if (!seasons.length) return null;
   return seasons.reduce((a, v) => a + Math.min(v, 82), 0) / (82 * seasons.length);
 }
 function availCell(p) {
   const pct = availPct(p);
-  if (pct == null) return `<td class="alt" title="אין עונות קודמות ב־NBA">–</td>`;
-  const detail = (p.avail || []).map((v, i) => v == null ? null : `${AVAIL_LABELS[i]}: ${v}`).filter(Boolean).join(" · ");
-  const seasons = (p.avail || []).filter((v) => v != null).length;
+  if (pct == null) return `<td class="alt" title="אין לו משחקים ב־NBA בעונות שנבחרו">–</td>`;
+  const detail = (p.avail || []).map((v, i) => v == null || !st.availSeasons.includes(i) ? null : `${AVAIL_LABELS[i]}: ${v}`).filter(Boolean).join(" · ");
+  const seasons = (p.avail || []).filter((v, i) => v != null && st.availSeasons.includes(i)).length;
   // green from 85% up, red below 65%
   const style = pct >= 0.85 ? `background:color-mix(in srgb, var(--pos) ${Math.round((pct - 0.85) / 0.15 * 35 + 8)}%, transparent)`
     : pct < 0.65 ? `background:color-mix(in srgb, var(--neg) ${Math.round(Math.min((0.65 - pct) / 0.4, 1) * 35 + 8)}%, transparent)` : "";
-  return `<td style="${style}" title="משחקים לפי עונה: ${detail}${seasons < 3 ? ` (רק ${seasons === 1 ? "עונה אחת" : seasons + " עונות"} בליגה)` : ""}">${Math.round(pct * 100)}%</td>`;
+  return `<td style="${style}" title="משחקים לפי עונה: ${detail}${seasons < st.availSeasons.length ? ` (בליגה רק ב־${seasons === 1 ? "עונה אחת" : seasons + " עונות"} מאלה שנבחרו)` : ""}">${Math.round(pct * 100)}%</td>`;
 }
 
 // Rank of each value among all values, 1 = best (higher is better; pass already-flipped values)
@@ -1068,6 +1077,7 @@ function syncControls() {
   for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", b.dataset.tab === st.tab);
   $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv";
   $("onlyFav").checked = st.onlyFav;
+  for (const b of document.querySelectorAll("[data-avs]")) b.setAttribute("aria-pressed", st.availSeasons.includes(Number(b.dataset.avs)));
   for (const b of document.querySelectorAll("[data-role]")) b.setAttribute("aria-pressed", st.roles.includes(b.dataset.role));
   for (const b of document.querySelectorAll("[data-inj]")) b.setAttribute("aria-pressed", b.dataset.inj === st.inj);
   for (const b of document.querySelectorAll("[data-rk]")) b.setAttribute("aria-pressed", b.dataset.rk === st.rookies);
@@ -1090,6 +1100,13 @@ document.addEventListener("click", (e) => {
   if (t.dataset.tk) {
     // first click on a column shows the best first (lowest DRTG, highest of the rest)
     if (st.teamSort === t.dataset.tk) st.teamAsc = !st.teamAsc; else { st.teamSort = t.dataset.tk; st.teamAsc = false; }
+    return update(false);
+  }
+  if (t.dataset.avs) {
+    const i = Number(t.dataset.avs);
+    if (st.availSeasons.includes(i)) {
+      if (st.availSeasons.length > 1) st.availSeasons = st.availSeasons.filter((x) => x !== i);  // keep at least one season
+    } else st.availSeasons = [...st.availSeasons, i].sort();
     return update(false);
   }
   if (t.dataset.role) {
