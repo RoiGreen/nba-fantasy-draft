@@ -38,6 +38,30 @@ INJURED_CSV = HERE / "injured_last_full_season.csv"
 ROOKIE_CSV = HERE / "rookie_projections_2026_27.csv"
 DIST_CSV = HERE / "team_distribution.csv"  # from team_distribution.py
 ROLES_CSV = HERE / "team_roles_2026_27.csv"  # from team_distribution.py
+# Availability: games played in each of the last three seasons (from fetch_rookie_history.py)
+AVAIL_SEASONS = [2023, 2024, 2025]
+SEASON_FILES = HERE / "nba_2025_26" / "rookies"
+
+
+def availability(roster: pd.DataFrame) -> dict[int, list]:
+    """Games played per season for every player; None for seasons before he reached the NBA,
+    0 for a season he was in the league but did not play (a full-season injury)."""
+    games, first_season = {}, {}
+    for y in range(2014, AVAIL_SEASONS[-1] + 1):
+        path = SEASON_FILES / f"all_players_{y}_{(y + 1) % 100:02d}.csv"
+        if not path.exists():
+            continue
+        df = pd.read_csv(path)
+        for pid, gp in zip(df["PLAYER_ID"], df["GP"]):
+            first_season.setdefault(int(pid), y)
+            if y in AVAIL_SEASONS:
+                games[(int(pid), y)] = int(gp)
+    from_year = roster["FROM_YEAR"].dropna().astype(int).to_dict()
+    out = {}
+    for pid in set(first_season) | set(from_year):
+        start = from_year.get(pid, first_season.get(pid))
+        out[pid] = [games.get((pid, y), 0) if start is not None and start <= y else None for y in AVAIL_SEASONS]
+    return out
 
 
 def entry(r, roster, adv, post=None) -> dict:
@@ -146,6 +170,10 @@ def main() -> None:
              for _, r in team_adv.iterrows()]
 
     html = TEMPLATE.read_text(encoding="utf-8")
+    avail = availability(roster)
+    for p in players:
+        p["avail"] = avail.get(p["id"], [None] * len(AVAIL_SEASONS))
+
     if ROLES_CSV.exists():
         roles = pd.read_csv(ROLES_CSV).set_index("PLAYER_ID")["ROLE"].to_dict()
         for p in players:
