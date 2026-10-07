@@ -20,7 +20,7 @@ OUT = HERE / "draft_dashboard.html"
 # Standalone website for GitHub Pages, with Supabase accounts (built when site_config.json is filled in)
 SITE_CONFIG = HERE / "site_config.json"
 SITE_OUT = HERE / "docs" / "index.html"
-SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
+SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"
 SITE_RESET = ("html{color-scheme:light dark}body{margin:0;font:14px/1.45 system-ui,-apple-system,'Segoe UI',sans-serif}"
               "img{max-width:100%}[hidden]{display:none!important}")
 
