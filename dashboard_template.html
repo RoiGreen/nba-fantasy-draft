@@ -1,0 +1,1168 @@
+<title>חדר הדראפט 2026-27</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Barlow+Condensed:wght@500;600;700&family=Secular+One&display=swap">
+<style>
+/* Layout: draft-room console. Controls rail on the right (RTL), big board on the left, my roster under the controls. */
+:root {
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --sunk: #e8ecf1;
+  --ink: #141920;
+  --muted: #5b6574;
+  --line: #d9dfe7;
+  --accent: #d2501b;
+  --accent-ink: #ffffff;
+  --pos: #12855a;
+  --neg: #c93838;
+  --mine: #2a55c4;
+  --fav: #e0a50f;
+  --rookie: #7a3fc4;
+  --font-display: "Secular One", "Assistant", system-ui, sans-serif;
+  --font-body: "Assistant", system-ui, "Segoe UI", Arial, sans-serif;
+  --font-num: "Barlow Condensed", "Assistant", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #151c26; --sunk: #1c2531; --ink: #e7ebf1; --muted: #8f9cae;
+    --line: #263142; --accent: #ff7a3d; --accent-ink: #1a0d05; --pos: #39c38a; --neg: #ff6a6a;
+    --mine: #7393f2; --fav: #f2c14e; --rookie: #b48af5; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #151c26; --sunk: #1c2531; --ink: #e7ebf1; --muted: #8f9cae;
+  --line: #263142; --accent: #ff7a3d; --accent-ink: #1a0d05; --pos: #39c38a; --neg: #ff6a6a;
+  --mine: #7393f2; --fav: #f2c14e; --rookie: #b48af5; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap { direction: rtl; padding-inline: 16px; padding-block: 16px 40px; max-width: 1600px; margin-inline: auto; display: grid; gap: 16px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: 1.9rem; line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 .yr { font-family: var(--font-num); font-weight: 700; color: var(--accent); letter-spacing: .02em; }
+.sub { color: var(--muted); margin: 4px 0 0; font-size: .92rem; }
+.board-count { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { font-family: var(--font-num); font-size: 1rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--sunk); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pill b { color: var(--ink); font-weight: 700; }
+.pill.mine b { color: var(--mine); }
+.save-state { font-size: .82rem; color: var(--muted); }
+.viewer { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .92rem; }
+.viewer img { width: 22px; height: 22px; border-radius: 50%; }
+
+.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+aside { display: grid; gap: 12px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
+.panel h2 { margin: 0; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.field { display: grid; gap: 6px; }
+.field > label, .field > .lbl { font-weight: 600; font-size: .9rem; display: flex; justify-content: space-between; gap: 8px; }
+.field output { font-family: var(--font-num); font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.hint { font-size: .8rem; color: var(--muted); margin: 0; }
+
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--sunk); border-radius: 8px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 600; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: var(--font-num); font-weight: 600; font-size: .95rem; padding: 3px 10px; border-radius: 999px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.chip.punt[aria-pressed="true"] { background: var(--neg); border-color: var(--neg); color: #fff; text-decoration: line-through; }
+
+input[type="search"], input[type="number"], select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; width: 100%; min-width: 0; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: .92rem; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+button:focus-visible, input:focus-visible, select:focus-visible, th:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* My roster */
+.roster-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.roster-list li { display: flex; justify-content: space-between; gap: 8px; font-size: .9rem; }
+.roster-list .meta { color: var(--muted); font-family: var(--font-num); }
+.catbars { display: grid; gap: 4px; }
+.catbar { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 6px; font-family: var(--font-num); font-size: .92rem; font-variant-numeric: tabular-nums; }
+.catbar .track { position: relative; height: 10px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
+.catbar .track::after { content: ""; position: absolute; inset-block: 0; inset-inline-start: 50%; width: 1px; background: var(--muted); opacity: .5; }
+.catbar .fill { position: absolute; inset-block: 0; border-radius: 2px; }
+.catbar .v { text-align: start; direction: ltr; }
+.catbar.punted { opacity: .4; }
+.empty { color: var(--muted); font-size: .88rem; margin: 0; }
+
+.danger { justify-self: start; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: .85rem; padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+.danger.armed { border-color: var(--neg); color: var(--neg); font-weight: 700; }
+
+/* Board */
+main { min-width: 0; display: grid; gap: 10px; }
+.tbl-wrap { overflow: auto; max-height: calc(100vh - 140px); border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 8px; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line); }
+thead th { position: sticky; top: 0; z-index: 2; background: var(--sunk); font-family: var(--font-num); font-weight: 700; font-size: .9rem; letter-spacing: .03em; color: var(--muted); cursor: pointer; user-select: none; }
+thead th:not(.nosort):hover { color: var(--ink); text-decoration: underline; }
+thead th.sorted { color: var(--ink); }
+.sortrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.dirbtn { font: inherit; font-weight: 700; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 0 12px; cursor: pointer; white-space: nowrap; }
+thead th.sorted::after { content: " ▾"; color: var(--accent); }
+thead th.sorted.asc::after { content: " ▴"; }
+thead th.nosort { cursor: default; }
+thead th.punted { text-decoration: line-through; opacity: .5; }
+td { font-family: var(--font-num); font-size: 1rem; }
+td.name { text-align: start; font-family: var(--font-body); font-size: .95rem; }
+td.name .n { font-weight: 700; }
+td.name .nc { display: flex; align-items: center; gap: 8px; }
+td.name .t { display: inline-flex; align-items: center; gap: 6px; direction: ltr; unicode-bidi: isolate; color: var(--muted); font-size: .8rem; font-family: var(--font-num); letter-spacing: .03em; }
+td.name .moved { color: var(--accent); font-weight: 700; font-size: .9rem; }
+td.name .moved b { color: var(--ink); font-weight: 700; }
+.rk { display: inline-block; font-family: var(--font-num); font-size: .75rem; font-weight: 700; padding: 0 6px; border-radius: 4px;
+  background: color-mix(in srgb, var(--rookie) 18%, transparent); color: var(--rookie); vertical-align: 1px; }
+.inj { display: inline-block; font-family: var(--font-num); font-size: .75rem; font-weight: 700;
+  padding: 0 6px; border-radius: 4px; background: color-mix(in srgb, var(--neg) 18%, transparent); color: var(--neg); vertical-align: 1px; }
+td.rank { font-weight: 700; font-size: 1.05rem; }
+td.alt { color: var(--muted); }
+td.val { font-weight: 700; font-size: 1.05rem; }
+td.up { color: var(--pos); } td.down { color: var(--neg); }
+td.cat.punted { opacity: .35; }
+tbody tr:hover td { background-color: color-mix(in srgb, var(--sunk) 60%, transparent); }
+tr.is-taken td { opacity: .4; }
+tr.is-mine td.name { box-shadow: inset -4px 0 0 var(--mine); }
+tr.is-mine td.name .n { color: var(--mine); }
+.act { display: inline-flex; gap: 4px; }
+td.acts, th.acts { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 6px 0 6px -6px rgba(0,0,0,.25); }
+thead th.acts { z-index: 3; background: var(--sunk); }
+.act button { font: inherit; font-family: var(--font-body); font-size: .8rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.act button.on-mine { background: var(--mine); border-color: var(--mine); color: #fff; }
+.act button.on-taken { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.act button.star { font-size: 1rem; line-height: 1; padding: 3px 7px; }
+.act button.on-fav { background: var(--fav); border-color: var(--fav); color: #1b1300; }
+tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
+.fav-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.fav-list li { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; font-size: .9rem; }
+.fav-list .unfav { border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: .8rem; line-height: 1; width: 24px; height: 24px; border-radius: 6px; cursor: pointer; }
+.fav-list .unfav:hover { border-color: var(--neg); color: var(--neg); }
+.fav-list .frk { font-family: var(--font-num); font-weight: 700; color: var(--muted); min-width: 2.2em; font-variant-numeric: tabular-nums; }
+.fav-list .gone { text-decoration: line-through; color: var(--muted); }
+.tag { font-size: .75rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
+.tag.mine { background: var(--mine); color: #fff; }
+.tag.avail { background: color-mix(in srgb, var(--pos) 20%, transparent); color: var(--pos); }
+
+.clock { border-radius: 8px; padding: 10px 12px; background: var(--sunk); display: grid; gap: 2px; }
+.clock .big { font-family: var(--font-num); font-weight: 700; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.clock.you { background: color-mix(in srgb, var(--mine) 18%, transparent); }
+.clock.you .big { color: var(--mine); }
+.draft-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; max-height: 260px; overflow-y: auto; }
+.draft-log li { display: grid; grid-template-columns: 3.4em 1fr auto; gap: 8px; align-items: center; font-size: .88rem; }
+.draft-log .no, .pickno { font-family: var(--font-num); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); }
+.draft-log li.me .who { color: var(--mine); font-weight: 700; }
+.draft-log .who { font-size: .78rem; color: var(--muted); }
+.pickchip { font-family: var(--font-num); font-size: .75rem; font-weight: 700; padding: 0 6px; border-radius: 4px; background: var(--sunk); color: var(--ink); }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.dist { display: grid; gap: 3px; }
+.dist button { display: grid; grid-template-columns: 3em minmax(0, 1fr); gap: 8px; align-items: center; width: 100%;
+  border: 0; background: transparent; color: var(--ink); font: inherit; padding: 3px 4px; border-radius: 6px; cursor: pointer; text-align: start; }
+.dist button:hover { background: var(--sunk); }
+.dist button[aria-pressed="true"] { background: var(--sunk); outline: 1px solid var(--accent); }
+.dist .abbr, .dist .pct { font-family: var(--font-num); font-weight: 700; font-variant-numeric: tabular-nums; font-size: .92rem; }
+.dist .pct { color: var(--muted); text-align: end; }
+.dist .bar { display: flex; height: 20px; border-radius: 4px; overflow: hidden; background: var(--sunk); }
+.dist .bar span { display: flex; align-items: center; justify-content: center; height: 100%; min-width: 0; overflow: hidden;
+  font-family: var(--font-num); font-weight: 700; font-size: .78rem; font-variant-numeric: tabular-nums; color: var(--ink); }
+.dist .bar .seg-key { color: var(--accent-ink); }
+.seg-key { background: var(--accent); }
+.seg-rot { background: color-mix(in srgb, var(--accent) 45%, var(--surface)); }
+.seg-bench { background: color-mix(in srgb, var(--muted) 35%, var(--surface)); }
+.dist-legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.dist-legend button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: .82rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; cursor: pointer; }
+.dist-legend button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.dist-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 4px; vertical-align: -1px; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; background: transparent; font: inherit; font-weight: 700; font-size: 1rem; color: var(--muted); padding: 8px 14px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.view { display: grid; gap: 10px; min-width: 0; }
+.view h3 { margin: 6px 0 0; font-size: 1.05rem; }
+.tbl-wrap.short { max-height: none; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: .85rem; align-items: center; }
+.legend .sw { display: inline-block; width: 26px; height: 10px; border-radius: 2px; vertical-align: middle; margin-inline-end: 4px; }
+.auth { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(3px); direction: rtl; }
+.auth-card { width: min(380px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 22px; display: grid; gap: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+.auth-card h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; }
+.auth-card h2 .yr { font-family: var(--font-num); font-weight: 700; color: var(--accent); }
+.auth-card input { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; width: 100%; }
+.auth-card .primary { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 10px; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); }
+.auth-card .primary:disabled { opacity: .6; cursor: wait; }
+.auth-card .linkbtn { border: 0; background: none; color: var(--muted); font: inherit; font-size: .88rem; cursor: pointer; text-decoration: underline; justify-self: start; padding: 0; }
+.auth-msg { font-size: .88rem; margin: 0; min-height: 1.2em; }
+.auth-msg.err { color: var(--neg); }
+.auth-msg.ok { color: var(--pos); }
+.signout { border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: .8rem; padding: 2px 10px; border-radius: 6px; cursor: pointer; }
+
+@media (prefers-reduced-motion: no-preference) { .seg button, .chip, .act button { transition: background-color .12s, color .12s; } }
+</style>
+
+<div class="auth" id="auth" hidden>
+  <form class="auth-card" id="authForm" novalidate>
+    <h2>חדר הדראפט <span class="yr">2026-27</span></h2>
+    <div class="seg" role="group" aria-label="כניסה או הרשמה" id="authTabs">
+      <button type="button" data-auth="in" aria-pressed="true">כניסה</button>
+      <button type="button" data-auth="up" aria-pressed="false">הרשמה</button>
+    </div>
+    <div class="field" id="usernameField" hidden><label for="authUser">שם משתמש</label><input id="authUser" autocomplete="nickname" maxlength="30"></div>
+    <div class="field" id="emailField"><label for="authEmail">אימייל</label><input id="authEmail" type="email" autocomplete="email" dir="ltr"></div>
+    <div class="field" id="passwordField"><label for="authPass">סיסמה</label><input id="authPass" type="password" autocomplete="current-password" dir="ltr" minlength="6"></div>
+    <button class="primary" id="authSubmit" type="submit">כניסה</button>
+    <button class="linkbtn" id="forgotBtn" type="button">שכחתי סיסמה</button>
+    <p class="auth-msg" id="authMsg" role="status"></p>
+  </form>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>חדר הדראפט <span class="yr">2026-27</span></h1>
+      <p class="sub">מבוסס על סטטיסטיקה רשמית של עונת 2025-26. הדירוג מחושב מחדש עם כל סינון.</p>
+    </div>
+    <div style="display:grid;gap:4px;justify-items:end">
+      <div class="board-count">
+        <span class="pill">זמינים <b id="cAvail">0</b></span>
+        <span class="pill">נבחרו <b id="cTaken">0</b></span>
+        <span class="pill mine">שלי <b id="cMine">0</b></span>
+        <span class="pill">מועדפים <b id="cFav">0</b></span>
+      </div>
+      <span class="viewer" id="viewer" hidden><img id="viewerAvatar" alt="" hidden><span id="viewerName"></span><button class="signout" id="signOutBtn" type="button" hidden>התנתקות</button></span>
+      <span class="save-state" id="saveState">הבחירות נשמרות בדפדפן הזה</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <section class="panel" aria-labelledby="hFmt">
+        <h2 id="hFmt">פורמט</h2>
+        <div class="field">
+          <span class="lbl">סוג ליגה</span>
+          <div class="seg" role="group" aria-label="סוג ליגה">
+            <button id="fmt9" aria-pressed="true" data-fmt="cat">9 קטגוריות</button>
+            <button id="fmtP" aria-pressed="false" data-fmt="pts">נקודות</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl">סטטיסטיקה</span>
+          <div class="seg" role="group" aria-label="נרמול">
+            <button id="modeG" aria-pressed="true" data-mode="g">אמיתי למשחק</button>
+            <button id="mode36" aria-pressed="false" data-mode="36">ל־36 דקות</button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="teams">קבוצות בליגה</label><input type="number" id="teams" min="4" max="30" value="12"></div>
+          <div class="field"><label for="roster">שחקנים בסגל</label><input type="number" id="roster" min="5" max="20" value="13"></div>
+        </div>
+        <div class="field" id="puntField">
+          <span class="lbl">ויתור על קטגוריות (Punt)</span>
+          <div class="chips" id="puntChips"></div>
+          <p class="hint">קטגוריה מסומנת לא נספרת בערך הכולל.</p>
+        </div>
+        <p class="hint" id="ptsHint" hidden>ניקוד ESPN: נקודה 1, שלשה 1, קליעה 2, זריקה ‎-1, עונשין 1, ניסיון עונשין ‎-1, ריבאונד 1, אסיסט 2, חטיפה 4, חסימה 4, איבוד ‎-2.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="hFilt">
+        <h2 id="hFilt">סינון ומיון</h2>
+        <div class="field">
+          <label for="sortBy">מיין לפי</label>
+          <div class="sortrow">
+            <select id="sortBy"></select>
+            <button class="dirbtn" id="sortDir" type="button"></button>
+          </div>
+          <p class="hint">אפשר גם ללחוץ על כותרת עמודה בטבלה.</p>
+        </div>
+        <div class="field"><label for="q">חיפוש שחקן</label><input type="search" id="q" placeholder="שם שחקן"></div>
+        <div class="field">
+          <label for="minGp">מינימום משחקים <output id="minGpOut">50</output></label>
+          <input type="range" id="minGp" min="10" max="82" value="50">
+        </div>
+        <div class="field">
+          <label for="minMin">מינימום דקות למשחק <output id="minMinOut">0</output></label>
+          <input type="range" id="minMin" min="0" max="36" value="0">
+        </div>
+        <div class="field">
+          <span class="lbl">עמדה</span>
+          <div class="chips" id="posChips">
+            <button class="chip" data-pos="G" aria-pressed="false">G</button>
+            <button class="chip" data-pos="F" aria-pressed="false">F</button>
+            <button class="chip" data-pos="C" aria-pressed="false">C</button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="team">קבוצה 2026-27</label><select id="team"></select></div>
+          <div class="field"><label for="maxAge">גיל מקסימלי</label><input type="number" id="maxAge" min="19" max="42" value="42"></div>
+        </div>
+        <label class="check"><input type="checkbox" id="hideTaken" checked> הסתר שחקנים שנבחרו</label>
+        <label class="check"><input type="checkbox" id="onlyFav"> רק מועדפים</label>
+        <label class="check"><input type="checkbox" id="onlyMoved"> רק שחקנים שעברו קבוצה</label>
+        <label class="check"><input type="checkbox" id="onlySleepers"> רק שחקנים שבולטים ב־36 דקות</label>
+        <div class="field">
+          <span class="lbl">נפצעו בעונה שעברה</span>
+          <div class="seg" role="group" aria-label="שחקנים שנפצעו">
+            <button data-inj="all" aria-pressed="true">כולם</button>
+            <button data-inj="only" aria-pressed="false">רק פצועים</button>
+            <button data-inj="hide" aria-pressed="false">בלי פצועים</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl">רוקיז (תחזית)</span>
+          <div class="seg" role="group" aria-label="רוקיז">
+            <button data-rk="all" aria-pressed="true">כולם</button>
+            <button data-rk="only" aria-pressed="false">רק רוקיז</button>
+            <button data-rk="hide" aria-pressed="false">בלי רוקיז</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="hFav">
+        <h2 id="hFav">המועדפים שלי</h2>
+        <ul class="fav-list" id="favList"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="hDraft">
+        <h2 id="hDraft">מצב דראפט</h2>
+        <div class="row2">
+          <div class="field"><label for="myPos">המיקום שלי בדראפט</label><input type="number" id="myPos" min="1" max="30" value="1"></div>
+          <div class="field"><span class="lbl">סדר</span><label class="check" style="padding-top:8px"><input type="checkbox" id="snake" checked> סנייק</label></div>
+        </div>
+        <div class="clock" id="clock"></div>
+        <ol class="draft-log" id="draftLog"></ol>
+        <div class="btnrow"><button class="danger" id="undoBtn" type="button">ביטול הבחירה האחרונה</button></div>
+      </section>
+
+      <section class="panel" aria-labelledby="hMine">
+        <h2 id="hMine">הקבוצה שלי</h2>
+        <ul class="roster-list" id="mineList"></ul>
+        <div class="catbars" id="mineBars"></div>
+        <button class="danger" id="resetBtn">איפוס הדראפט</button>
+      </section>
+
+      <section class="panel" aria-labelledby="hDist" id="distPanel">
+        <h2 id="hDist">פיזור חשיבות</h2>
+        <p class="hint">איך תפוקת הפנטזי של כל קבוצה מתחלקת ברוטציה בריאה של 2026-27. ככל שהחלק של שחקני המפתח קטן יותר, יש יותר מקום לשחקני רוטציה. לחיצה על קבוצה או על תפקיד מסננת את הטבלה. אפשר לבחור כמה תפקידים יחד, ולשלב עם קבוצה.</p>
+        <div class="dist-legend" role="group" aria-label="סינון לפי תפקיד בקבוצה">
+          <button data-role="key" aria-pressed="false"><i class="seg-key"></i>מפתח (1-3)</button>
+          <button data-role="rotation" aria-pressed="false"><i class="seg-rot"></i>רוטציה (4-8)</button>
+          <button data-role="bench" aria-pressed="false"><i class="seg-bench"></i>ספסל (9+)</button>
+        </div>
+        <div class="dist" id="distList"></div>
+      </section>
+    </aside>
+
+    <main>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tabBoard" data-tab="board" aria-selected="true" aria-controls="viewBoard">לוח הדראפט</button>
+        <button role="tab" id="tabAdv" data-tab="adv" aria-selected="false" aria-controls="viewAdv">מתקדם: USG% · PACE · ORTG</button>
+      </div>
+      <section class="view" id="viewBoard" role="tabpanel" aria-labelledby="tabBoard">
+      <div class="legend">
+        <span><span class="sw" style="background:color-mix(in srgb, var(--pos) 38%, transparent)"></span>חזק בקטגוריה</span>
+        <span><span class="sw" style="background:color-mix(in srgb, var(--neg) 38%, transparent)"></span>חלש בקטגוריה</span>
+        <span><b>Z</b> = כמה השחקן טוב מהשחקן הממוצע שנבחר בדראפט, בסכום כל הקטגוריות. 0 זה ממוצע, וככל שגבוה יותר הוא שווה יותר</span>
+        <span>פער = כמה מקומות השחקן עולה כשמנרמלים ל־36 דקות</span>
+        <span><span class="rk">R #3</span> רוקי ומקום הבחירה בדראפט. המספרים הם תחזית</span>
+        <span><span class="inj" style="margin:0">24-25</span> נפצע בעונה שעברה, מוצגת העונה המלאה האחרונה שלו</span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr id="head"></tr></thead>
+          <tbody id="body"></tbody>
+        </table>
+      </div>
+      </section>
+
+      <section class="view" id="viewAdv" role="tabpanel" aria-labelledby="tabAdv" hidden>
+        <div class="legend">
+          <span><b>USG%</b> אחוז מהפוזשנים של הקבוצה שהשחקן מסיים כשהוא על המגרש</span>
+          <span><b>PACE</b> פוזשנים ל־48 דקות כשהשחקן על המגרש</span>
+          <span><b>ORTG</b> נקודות שהקבוצה קולעת ל־100 פוזשנים כשהשחקן על המגרש</span>
+          <span><b>TEAM PACE 25-26</b> = הקצב ב־2025-26 של הקבוצה שהשחקן ישחק בה ב־2026-27. קצב גבוה יותר נותן יותר התקפות ויותר סטטיסטיקה</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr id="advHead"></tr></thead>
+            <tbody id="advBody"></tbody>
+          </table>
+        </div>
+        <h3>קבוצות 2025-26</h3>
+        <div class="tbl-wrap short">
+          <table>
+            <thead><tr id="teamHead"></tr></thead>
+            <tbody id="teamBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+const D = /*__DATA__*/null;
+const S = D.stats;
+const ix = Object.fromEntries(S.map((s, i) => [s, i]));
+const CATS = [
+  { k: "PTS", l: "PTS" }, { k: "REB", l: "REB" }, { k: "AST", l: "AST" },
+  { k: "STL", l: "STL" }, { k: "BLK", l: "BLK" }, { k: "FG3M", l: "3PM" },
+  { k: "FG_PCT", l: "FG%" }, { k: "FT_PCT", l: "FT%" }, { k: "TOV", l: "TOV" },
+];
+const PTSW = { PTS: 1, FG3M: 1, FGA: -1, FGM: 2, FTA: -1, FTM: 1, REB: 1, AST: 2, STL: 4, BLK: 4, TOV: -2 };
+const SLEEPER_GAP = 40;
+
+function line(arr, mode) {
+  const f = mode === "36" ? 36 / Math.max(arr[ix.MIN], 1) : 1;
+  const o = {};
+  S.forEach((s, i) => { o[s] = s === "MIN" ? arr[i] : arr[i] * f; });
+  o.FG_PCT = arr[ix.FGA] ? arr[ix.FGM] / arr[ix.FGA] : 0;
+  o.FT_PCT = arr[ix.FTA] ? arr[ix.FTM] / arr[ix.FTA] : 0;
+  return o;
+}
+const fpts = (o) => Object.entries(PTSW).reduce((a, [k, w]) => a + o[k] * w, 0);
+
+// Before the All-Star break = full-season totals minus after-the-break totals
+function preAllStar(p) {
+  const preGp = p.gp - p.post_gp;
+  if (!p.post || p.post_gp < 5 || preGp < 5) return null;
+  return p.s.map((v, i) => Math.max((v * p.gp - p.post[i] * p.post_gp) / preGp, 0));
+}
+
+const players = D.players.map((p) => {
+  const L = { g: line(p.s, "g"), "36": line(p.s, "36") };
+  const pre = preAllStar(p);
+  const both = (arr) => ({ g: fpts(line(arr, "g")), "36": fpts(line(arr, "36")) });
+  // Trend: fantasy points per game after the All-Star break minus before it
+  const T = pre ? { post: both(p.post), pre: both(pre) } : null;
+  return { ...p, L, F: { g: fpts(L.g), "36": fpts(L["36"]) },
+           trend: T ? { g: T.post.g - T.pre.g, "36": T.post["36"] - T.pre["36"] } : null };
+});
+
+// ---------- state ----------
+const st = {
+  fmt: "cat", mode: "g", teams: 12, roster: 13, punts: new Set(),
+  q: "", minGp: 50, minMin: 0, pos: new Set(), team: "", maxAge: 42,
+  hideTaken: true, onlyMoved: false, onlySleepers: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
+  sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false,
+};
+let taken = new Set(), mine = new Set(), fav = new Set();
+// Every "taken" / "mine" click in draft order: [{ id, who: "t" | "m" }]
+let picks = [];
+function rebuildSets() {
+  taken = new Set(picks.filter((x) => x.who === "t").map((x) => x.id));
+  mine = new Set(picks.filter((x) => x.who === "m").map((x) => x.id));
+}
+function picksFrom(d) {
+  if (Array.isArray(d.picks)) return d.picks.filter((x) => x && typeof x.id === "number");
+  return [...(d.taken || []).map((id) => ({ id, who: "t" })), ...(d.mine || []).map((id) => ({ id, who: "m" }))];
+}
+
+// Set by build_dashboard.py for the standalone website (Supabase login); null inside claude.ai
+const SITE = /*__SITE__*/null;
+
+const SETTINGS_KEY = "draftroom.settings.v1", PICKS_KEY = "draftroom.picks.v1";
+function applySettings(s) {
+  if (!s || typeof s !== "object") return;
+  if (s.onlyInj && !s.inj) s.inj = "only";
+  if (!Array.isArray(s.roles)) s.roles = s.role ? [s.role] : [];
+  Object.assign(st, s, { punts: new Set(s.punts || []), pos: new Set(s.pos || []) });
+}
+const settingsData = () => ({ ...st, punts: [...st.punts], pos: [...st.pos] });
+try {
+  applySettings(JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null"));
+  // On the website picks belong to the signed-in account, never to whoever used this browser before
+  const k = SITE ? null : JSON.parse(localStorage.getItem(PICKS_KEY) || "null");
+  if (k) { picks = picksFrom(k); rebuildSets(); fav = new Set(k.fav || []); }
+} catch (e) {}
+let settingsTimer = null;
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData())); } catch (e) {}
+  // Settings follow the account too; wait for a pause so a slider drag is one write
+  clearTimeout(settingsTimer);
+  settingsTimer = setTimeout(() => { if (remote) flushPicks(); }, 800);
+}
+
+// ---------- ranking ----------
+function meanStd(xs) {
+  const n = xs.length; if (n < 2) return [0, 1];
+  const m = xs.reduce((a, b) => a + b, 0) / n;
+  const v = xs.reduce((a, b) => a + (b - m) ** 2, 0) / (n - 1);
+  return [m, Math.sqrt(v) || 1];
+}
+function zScores(list, pool, mode) {
+  const out = new Map(list.map((p) => [p.id, { z: {}, total: 0 }]));
+  for (const c of CATS) {
+    let get;
+    if (c.k === "FG_PCT" || c.k === "FT_PCT") {
+      const [m, a] = c.k === "FG_PCT" ? ["FGM", "FGA"] : ["FTM", "FTA"];
+      const lg = pool.reduce((s, p) => s + p.L[mode][m], 0) / Math.max(pool.reduce((s, p) => s + p.L[mode][a], 0), 1e-9);
+      get = (p) => p.L[mode][m] - lg * p.L[mode][a];
+    } else {
+      get = (p) => p.L[mode][c.k];
+    }
+    const [mu, sd] = meanStd(pool.map(get));
+    const sign = c.k === "TOV" ? -1 : 1;
+    for (const p of list) {
+      const z = sign * (get(p) - mu) / sd;
+      const r = out.get(p.id);
+      r.z[c.k] = z;
+      if (!st.punts.has(c.k)) r.total += z;
+    }
+  }
+  return out;
+}
+function rankAll(list, mode) {
+  const size = Math.max(1, st.teams * st.roster);
+  const real = list.filter((p) => !p.rookie);
+  let pool = real, z;
+  for (let i = 0; i < 3; i++) {
+    z = zScores(list, pool, mode);
+    pool = [...real].sort((a, b) => z.get(b.id).total - z.get(a.id).total).slice(0, size);
+  }
+  z = zScores(list, pool, mode);
+  const byCat = [...list].sort((a, b) => z.get(b.id).total - z.get(a.id).total);
+  const byPts = [...list].sort((a, b) => b.F[mode] - a.F[mode]);
+  const rCat = new Map(byCat.map((p, i) => [p.id, i + 1]));
+  const rPts = new Map(byPts.map((p, i) => [p.id, i + 1]));
+  return { z, rank: st.fmt === "cat" ? rCat : rPts };
+}
+
+// ---------- rendering ----------
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt1 = (x) => x.toFixed(1), fmt3 = (x) => x.toFixed(3).replace(/^0/, "");
+function heat(z) {
+  const pct = Math.min(Math.abs(z) / 2.5, 1) * 40;
+  return `background:color-mix(in srgb, var(${z >= 0 ? "--pos" : "--neg"}) ${pct.toFixed(0)}%, transparent)`;
+}
+
+const COLS = [
+  { k: "rank", l: "#", asc: true }, { k: "rankAlt", l: "", asc: true }, { k: "gap", l: "פער", asc: false },
+  { k: "name", l: "שחקן", asc: true }, { k: "age", l: "גיל", asc: true }, { k: "gp", l: "GP", asc: false },
+  { k: "MIN", l: "MIN", asc: false },
+  ...CATS.map((c) => ({ k: c.k, l: c.l, asc: c.k === "TOV", cat: true })),
+  { k: "zTotal", l: "Z", asc: false }, { k: "fp", l: "FPTS", asc: false },
+  { k: "trend", l: "מגמה", asc: false }, { k: "act", l: "", nosort: true },
+];
+
+let last = null;
+function compute() {
+  const list = players.filter((p) => (p.rookie || p.gp >= st.minGp) && p.L.g.MIN >= st.minMin);
+  const now = rankAll(list, st.mode);
+  const other = rankAll(list, st.mode === "g" ? "36" : "g");
+  const rG = st.mode === "g" ? now.rank : other.rank, r36 = st.mode === "g" ? other.rank : now.rank;
+  last = { list, now, other, rG, r36 };
+}
+
+function passes(p, gap) {
+  const q = st.q.trim().toLowerCase();
+  return (!q || p.name.toLowerCase().includes(q)) &&
+    (!st.pos.size || [...st.pos].some((x) => (p.pos || "").includes(x))) &&
+    (!st.team || (st.team === "-" ? !p.team26 : p.team26 === st.team)) &&
+    (p.age == null || p.age <= st.maxAge) &&
+    (st.rookies === "all" || (st.rookies === "only") === !!p.rookie) &&
+    (!st.hideTaken || (!taken.has(p.id) && !mine.has(p.id))) &&
+    (!st.onlyMoved || hasMoved(p)) &&
+    (st.inj === "all" || (st.inj === "only") === !!p.src) &&
+    (!st.roles.length || st.roles.includes(p.role)) &&
+    (!st.onlySleepers || gap >= SLEEPER_GAP) &&
+    (!st.onlyFav || fav.has(p.id));
+}
+
+function render() {
+  const { list, now, other, rG, r36 } = last;
+  const m = st.mode;
+  let rows = list.map((p) => ({
+    p, rank: now.rank.get(p.id), rankAlt: other.rank.get(p.id),
+    gap: rG.get(p.id) - r36.get(p.id), z: now.z.get(p.id),
+  })).filter(({ p, gap }) => passes(p, gap));
+
+  const key = (r) => {
+    switch (st.sort) {
+      case "rank": return r.rank; case "rankAlt": return r.rankAlt; case "gap": return r.gap;
+      case "name": return r.p.name; case "age": return r.p.age; case "gp": return r.p.gp;
+      case "zTotal": return r.z.total; case "fp": return r.p.F[m];
+      case "MIN": return r.p.L.g.MIN;
+      case "FG_RAW": return r.p.L[m].FG_PCT; case "FT_RAW": return r.p.L[m].FT_PCT;
+      case "trend": return r.p.trend ? r.p.trend[m] : -Infinity;
+      default: return CATS.some((c) => c.k === st.sort) ? r.z.z[st.sort] * (st.sort === "TOV" ? -1 : 1) : 0;
+    }
+  };
+  rows.sort((a, b) => {
+    const x = key(a), y = key(b);
+    const c = typeof x === "string" ? x.localeCompare(y) : x - y;
+    return st.asc ? c : -c;
+  });
+
+  // header
+  const altLabel = m === "g" ? "# 36" : "# משחק";
+  $("head").innerHTML = COLS.map((c) => {
+    const label = c.k === "rankAlt" ? altLabel : c.k === "rank" ? (m === "g" ? "# משחק" : "# 36") : c.l;
+    const cls = [st.sort === c.k ? "sorted" : "", st.sort === c.k && st.asc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : "",
+                 c.cat && st.fmt === "cat" && st.punts.has(c.k) ? "punted" : ""].join(" ");
+    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-k="${c.k}"`} scope="col">${esc(label)}</th>`;
+  }).join("");
+
+  // body
+  $("body").innerHTML = rows.map(({ p, rank, rankAlt, gap, z }) => {
+    const o = p.L[m];
+    const cats = CATS.map((c) => {
+      const v = c.k.endsWith("_PCT") ? fmt3(o[c.k]) : fmt1(o[c.k]);
+      const punted = st.fmt === "cat" && st.punts.has(c.k) ? " punted" : "";
+      return `<td class="cat${punted}" style="${heat(z.z[c.k])}">${v}</td>`;
+    }).join("");
+    const trend = p.trend ? p.trend[m] : null;
+    const tCls = trend == null ? "" : trend >= 2 ? "up" : trend <= -2 ? "down" : "";
+    return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
+      <td class="rank">${rank}</td><td class="alt">${rankAlt}</td>
+      <td class="${gap >= SLEEPER_GAP ? "up" : gap <= -SLEEPER_GAP ? "down" : "alt"}">${gap > 0 ? "+" : ""}${gap}</td>
+      ${nameCell(p)}
+      <td>${p.age ?? "–"}</td><td>${p.gp}</td><td>${fmt1(p.L.g.MIN)}</td>${cats}
+      <td class="val">${z.total.toFixed(2)}</td><td class="val">${fmt1(p.F[m])}</td>
+      <td class="${tCls}" title="נקודות פנטזי למשחק אחרי האולסטאר פחות לפני האולסטאר">${trend == null ? "–" : (trend > 0 ? "+" : "") + fmt1(trend)}</td>
+      <td class="acts">${actions(p)}</td></tr>`;
+  }).join("") || EMPTY_ROW(COLS.length);
+
+  // counts
+  const avail = list.filter((p) => !taken.has(p.id) && !mine.has(p.id)).length;
+  $("cAvail").textContent = avail; $("cTaken").textContent = taken.size; $("cMine").textContent = mine.size;
+  $("cFav").textContent = fav.size;
+
+  renderMine(); renderFav(); renderAdv(); renderDraft(); renderDist();
+}
+
+// The team the shown stats come from: the older season's team for injured players
+const fromTeam = (p) => (p.src ? p.team_src : p.team25);
+const hasMoved = (p) => !!p.team26 && !!fromTeam(p) && fromTeam(p) !== p.team26;
+
+function nameCell(p) {
+  const from = fromTeam(p);
+  // Season badge sits right before the team those stats were recorded with
+  const range = p.pts_range ? ` טווח נקודות סביר: ${p.pts_range[0]}–${p.pts_range[1]}.` : "";
+  const rk = p.rookie
+    ? `<span class="rk" title="רוקי, נבחר במקום ${p.pick}${p.college ? " מ־" + esc(p.college) : ""}. תחזית מודל: מכללה, מקום בדראפט וסקאוטינג.${range}${p.note ? " " + esc(p.note) : ""}">R #${p.pick}</span>`
+    : "";
+  const inj = p.src
+    ? `<span class="inj" title="שיחק ${p.gp_now} משחקים ב־2025-26. מוצגים נתוני ${p.src} ב־${esc(from)}, העונה המלאה האחרונה שלו.">${p.src.slice(2)}</span>`
+    : "";
+  const team = !p.team26 ? `${rk}${inj}<span title="ללא קבוצה ל־2026-27">FA</span>`
+    : hasMoved(p) ? `${rk}${inj}<span class="moved" title="עבר מ־${esc(from)} ל־${esc(p.team26)}">${esc(from)} → <b>${esc(p.team26)}</b></span>`
+    : `${rk}${inj}${esc(p.team26)}`;
+  const n = picks.findIndex((x) => x.id === p.id);
+  const chip = n >= 0 ? `<span class="pickchip" title="בחירה ${n + 1} בדראפט">${pickLabel(n + 1)}</span>` : "";
+  return `<td class="name"><div class="nc"><span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span></div></td>`;
+}
+
+const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
+
+function actions(p) {
+  const isMine = mine.has(p.id), isTaken = taken.has(p.id), isFav = fav.has(p.id);
+  return `<span class="act">
+    <button data-id="${p.id}" data-a="fav" class="star ${isFav ? "on-fav" : ""}" aria-pressed="${isFav}" aria-label="מועדף" title="מועדף">★</button>
+    <button data-id="${p.id}" data-a="mine" class="${isMine ? "on-mine" : ""}" aria-pressed="${isMine}">שלי</button>
+    <button data-id="${p.id}" data-a="taken" class="${isTaken ? "on-taken" : ""}" aria-pressed="${isTaken}">נלקח</button>
+  </span>`;
+}
+
+function renderFav() {
+  const fp = players.filter((p) => fav.has(p.id));
+  if (!fp.length) {
+    $("favList").innerHTML = `<li class="empty" style="display:block">לחץ ★ ליד שחקן כדי לשמור אותו כאן.</li>`;
+    return;
+  }
+  const rank = last.now.rank;
+  fp.sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
+  $("favList").innerHTML = fp.map((p) => {
+    const status = mine.has(p.id) ? `<span class="tag mine">שלי</span>`
+      : taken.has(p.id) ? `<span class="tag">נלקח</span>` : `<span class="tag avail">זמין</span>`;
+    const gone = taken.has(p.id) ? "gone" : "";
+    return `<li><span class="frk">${rank.has(p.id) ? "#" + rank.get(p.id) : "–"}</span><span class="${gone}">${esc(p.name)}</span>${status}` +
+      `<button class="unfav" data-id="${p.id}" data-a="fav" aria-label="הסר את ${esc(p.name)} מהמועדפים" title="הסר מהמועדפים">✕</button></li>`;
+  }).join("");
+}
+
+// ---------- advanced tab ----------
+const TEAM_STATS = new Map((D.teams || []).map((t) => [t.t, t]));
+const ADV_COLS = [
+  { k: "rank", l: "#", asc: true }, { k: "name", l: "שחקן", asc: true },
+  { k: "gp", l: "GP", asc: false }, { k: "min", l: "MIN", asc: false },
+  { k: "USG", l: "USG%", asc: false }, { k: "PACE", l: "PACE", asc: false },
+  { k: "ORTG", l: "ORTG", asc: false }, { k: "TPACE", l: "TEAM PACE 25-26", asc: false },
+  { k: "act", l: "", nosort: true },
+];
+function advVal(p, k) {
+  if (k === "TPACE") return TEAM_STATS.get(p.team26)?.PACE ?? null;
+  if (!p.adv) return null;
+  return { USG: p.adv[0] * 100, PACE: p.adv[1], ORTG: p.adv[2] }[k];
+}
+function percentileHeat(values) {
+  const sorted = values.filter((v) => v != null).sort((a, b) => a - b);
+  return (v) => {
+    if (v == null || sorted.length < 2) return "";
+    let lo = 0, hi = sorted.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid] < v) lo = mid + 1; else hi = mid; }
+    const pct = lo / (sorted.length - 1);
+    return `background:color-mix(in srgb, var(--accent) ${(pct * 42).toFixed(0)}%, transparent)`;
+  };
+}
+function renderAdv() {
+  if (st.tab !== "adv") return;
+  const { list, now, rG, r36 } = last;
+  const rows = list.filter((p) => passes(p, rG.get(p.id) - r36.get(p.id)));
+  const heats = Object.fromEntries(["USG", "PACE", "ORTG", "TPACE"].map((k) => [k, percentileHeat(list.map((p) => advVal(p, k)))]));
+  const key = (p) => st.advSort === "rank" ? now.rank.get(p.id) : st.advSort === "name" ? p.name
+    : st.advSort === "gp" ? p.gp : st.advSort === "min" ? p.L.g.MIN : (advVal(p, st.advSort) ?? -Infinity);
+  rows.sort((a, b) => {
+    const x = key(a), y = key(b);
+    const c = typeof x === "string" ? x.localeCompare(y) : x - y;
+    return st.advAsc ? c : -c;
+  });
+
+  $("advHead").innerHTML = ADV_COLS.map((c) => {
+    const cls = [st.advSort === c.k ? "sorted" : "", st.advSort === c.k && st.advAsc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : ""].join(" ");
+    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.l)}</th>`;
+  }).join("");
+  $("advBody").innerHTML = rows.map((p) => {
+    const cell = (k) => { const v = advVal(p, k); return `<td style="${heats[k](v)}">${v == null ? "–" : v.toFixed(1)}</td>`; };
+    return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
+      <td class="rank">${now.rank.get(p.id)}</td>
+      ${nameCell(p)}
+      <td>${p.gp}</td><td>${fmt1(p.L.g.MIN)}</td>
+      ${cell("USG")}${cell("PACE")}${cell("ORTG")}${cell("TPACE")}
+      <td class="acts">${actions(p)}</td></tr>`;
+  }).join("") || EMPTY_ROW(ADV_COLS.length);
+
+  // Teams: lower DRTG is better, so its shading is inverted
+  const TCOLS = [{ k: "PACE", l: "PACE" }, { k: "OFF_RATING", l: "ORTG" }, { k: "DEF_RATING", l: "DRTG", inv: true }, { k: "NET_RATING", l: "NET" }];
+  const teams = [...(D.teams || [])].sort((a, b) => b.PACE - a.PACE);
+  const sign = (c) => (c.inv ? -1 : 1);
+  const th = Object.fromEntries(TCOLS.map((c) => [c.k, percentileHeat(teams.map((t) => sign(c) * t[c.k]))]));
+  $("teamHead").innerHTML = `<th class="nosort" scope="col">קבוצה</th>` + TCOLS.map((c) => `<th class="nosort" scope="col">${c.l}</th>`).join("");
+  $("teamBody").innerHTML = teams.map((t) =>
+    `<tr><td class="name"><span class="n">${esc(t.t || "")}</span><span class="t">${esc(t.name)}</span></td>` +
+    TCOLS.map((c) => `<td style="${th[c.k](sign(c) * t[c.k])}">${c.k === "NET_RATING" && t[c.k] > 0 ? "+" : ""}${t[c.k].toFixed(1)}</td>`).join("") +
+    `</tr>`).join("");
+}
+
+
+const pickIndex = () => new Map(picks.map((x, i) => [x.id, i + 1]));
+function pickLabel(n) {
+  const t = Math.max(1, st.teams);
+  const round = Math.ceil(n / t), inRound = n - (round - 1) * t;
+  return `${round}.${String(inRound).padStart(2, "0")}`;
+}
+// Which draft slot (1..teams) makes overall pick n
+function slotOf(n) {
+  const t = Math.max(1, st.teams);
+  const round = Math.ceil(n / t), inRound = n - (round - 1) * t;
+  return st.snake && round % 2 === 0 ? t - inRound + 1 : inRound;
+}
+
+const ROLE_SEGS = [
+  { role: "key", k: "key", cls: "seg-key" },
+  { role: "rotation", k: "rot", cls: "seg-rot" },
+  { role: "bench", k: "bench", cls: "seg-bench" },
+];
+function renderDist() {
+  const all = D.dist || [];
+  $("distPanel").hidden = !all.length;
+  const pct = (x) => `${Math.round(x * 100)}%`;
+  // With roles selected, show only those segments and sort highest first by the most important one
+  // (key > rotation > bench); ties go to the next selected role
+  const chosen = ROLE_SEGS.filter((s) => st.roles.includes(s.role));
+  const byImportance = (a, b) => {
+    for (const s of chosen) if (b[s.k] !== a[s.k]) return b[s.k] - a[s.k];
+    return 0;
+  };
+  const rows = chosen.length ? [...all].sort(byImportance) : all;
+  const segs = chosen.length ? chosen : ROLE_SEGS;
+  $("distList").innerHTML = rows.map((d) =>
+    `<button data-distteam="${esc(d.t)}" aria-pressed="${st.team === d.t}"
+       title="${esc(d.t)}: מפתח ${pct(d.key)} (${esc(d.players)}) · רוטציה ${pct(d.rot)} · ספסל ${pct(d.bench)}">
+      <span class="abbr">${esc(d.t)}</span>
+      <span class="bar">${segs.map((s) => `<span class="${s.cls}" style="width:${d[s.k] * 100}%">${pct(d[s.k])}</span>`).join("")}</span>
+    </button>`).join("");
+}
+
+function renderDraft() {
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const next = picks.length + 1;
+  const me = Math.min(st.myPos, st.teams);
+  let wait = 0;
+  while (slotOf(next + wait) !== me && wait < st.teams * 2) wait++;
+  const clock = $("clock");
+  clock.classList.toggle("you", wait === 0);
+  clock.innerHTML = wait === 0
+    ? `<span class="big">התור שלך · ${pickLabel(next)}</span><span>בחירה ${next} בסך הכול</span>`
+    : `<span class="big">על השעון: ${pickLabel(next)}</span><span>בוחר מיקום ${slotOf(next)} · עוד ${wait} בחירות עד התור שלך (${pickLabel(next + wait)})</span>`;
+  $("draftLog").innerHTML = picks.length
+    ? picks.map((x, i) => {
+        const p = byId.get(x.id);
+        return `<li class="${x.who === "m" ? "me" : ""}"><span class="no">${pickLabel(i + 1)}</span><span>${esc(p ? p.name : "?")}</span><span class="who">${x.who === "m" ? "שלי" : "נלקח"}</span></li>`;
+      }).reverse().join("")
+    : `<li class="empty" style="display:block">כל לחיצה על "נלקח" או "שלי" נרשמת כאן לפי הסדר.</li>`;
+  $("undoBtn").disabled = !picks.length;
+}
+
+function renderMine() {
+  const order = pickIndex();
+  const mp = players.filter((p) => mine.has(p.id)).sort((a, b) => order.get(a.id) - order.get(b.id));
+  const m = st.mode;
+  if (!mp.length) {
+    $("mineList").innerHTML = `<li class="empty">עוד לא בחרת שחקנים. לחץ "שלי" ליד שחקן כדי להוסיף אותו.</li>`;
+    $("mineBars").innerHTML = "";
+    return;
+  }
+  const zAll = last.now.z;
+  $("mineList").innerHTML = mp.map((p) => `<li><span><span class="pickno">${pickLabel(order.get(p.id))}</span> ${esc(p.name)}</span><span class="meta">${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</span></li>`).join("");
+  if (st.fmt === "pts") {
+    const total = mp.reduce((a, p) => a + p.F[m], 0);
+    $("mineBars").innerHTML = `<p class="hint">סה״כ נקודות פנטזי למשחק: <b style="font-family:var(--font-num);color:var(--ink)">${fmt1(total)}</b></p>`;
+    return;
+  }
+  const sums = CATS.map((c) => ({ c, v: mp.reduce((a, p) => a + (zAll.get(p.id)?.z[c.k] ?? 0), 0) }));
+  const maxAbs = Math.max(3, ...sums.map((s) => Math.abs(s.v)));
+  $("mineBars").innerHTML = `<p class="hint">סכום ציוני z לכל קטגוריה. ירוק = חוזקה, אדום = חולשה.</p>` + sums.map(({ c, v }) => {
+    const w = (Math.abs(v) / maxAbs) * 50;
+    const side = v >= 0 ? `inset-inline-start:calc(50% - ${w}%)` : `inset-inline-start:50%`;
+    return `<div class="catbar${st.punts.has(c.k) ? " punted" : ""}"><span>${c.l}</span>
+      <span class="track"><span class="fill" style="${side};width:${w}%;background:var(${v >= 0 ? "--pos" : "--neg"})"></span></span>
+      <span class="v">${v >= 0 ? "+" : ""}${v.toFixed(1)}</span></div>`;
+  }).join("");
+}
+
+// ---------- persistence of picks ----------
+// remote = { save(data) } for the signed-in account: claude.ai db or Supabase
+let remote = null, writing = false, dirty = false;
+const userData = () => ({ picks, taken: [...taken], mine: [...mine], fav: [...fav], settings: settingsData() });
+function savePicksLocal() {
+  if (SITE) return;
+  try { localStorage.setItem(PICKS_KEY, JSON.stringify(userData())); } catch (e) {}
+}
+async function flushPicks() {
+  savePicksLocal();
+  if (!remote) return;
+  if (writing) { dirty = true; return; }
+  writing = true;
+  try {
+    do {
+      dirty = false;
+      await remote.save(userData());
+    } while (dirty);
+    $("saveState").textContent = "הבחירות נשמרות בחשבון שלך";
+  } catch (e) {
+    $("saveState").textContent = "השמירה בחשבון נכשלה. הבחירות נשמרות בדפדפן הזה בלבד.";
+  } finally { writing = false; }
+}
+async function connectStore() {
+  if (!window.claude?.use) return;
+  try {
+    const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+    if (user) {
+      const me = await user.me();
+      if (me.name) {
+        $("viewerName").textContent = `שלום, ${me.name}`;
+        $("viewerAvatar").src = me.avatarUrl;
+        $("viewerAvatar").hidden = false;
+        $("viewer").hidden = false;
+      }
+    }
+    const uid = db && user ? await user.id() : null;
+    if (!uid) return;
+    const dbRef = db.doc(`data/users/${uid}/draft`);
+    remote = { save: (data) => dbRef.set({ ...data, updatedAt: Date.now() }) };
+    let first = true;
+    dbRef.onSnapshot((snap) => {
+      if (snap.metadata.hasPendingWrites) return;
+      const d = snap.exists ? snap.data() : null;
+      if (d) {
+        picks = picksFrom(d); rebuildSets(); fav = new Set(d.fav || []);
+        if (first && d.settings) { applySettings(d.settings); syncControls(); compute(); }
+        savePicksLocal();
+        $("saveState").textContent = "הבחירות נשמרות בחשבון שלך";
+        render();
+      } else if (first && (taken.size || mine.size || fav.size)) {
+        flushPicks();
+      } else {
+        $("saveState").textContent = "הבחירות נשמרות בחשבון שלך";
+      }
+      first = false;
+    }, () => { remote = null; $("saveState").textContent = "הבחירות נשמרות בדפדפן הזה בלבד"; });
+  } catch (e) {}
+}
+
+// ---------- website: Supabase accounts ----------
+const AUTH_ERRORS = {
+  "Invalid login credentials": "האימייל או הסיסמה שגויים.",
+  "Email not confirmed": "צריך קודם לאשר את המייל. בדוק את תיבת הדואר (וגם את הספאם).",
+  "User already registered": "כבר יש משתמש עם המייל הזה. נסה להיכנס.",
+  "Password should be at least 6 characters.": "הסיסמה צריכה להיות לפחות 6 תווים.",
+};
+const authText = (e) => AUTH_ERRORS[e?.message] || `משהו השתבש: ${e?.message || "נסה שוב"}`;
+
+async function connectSite() {
+  const sb = window.supabase.createClient(SITE.supabaseUrl, SITE.supabaseKey);
+  const here = location.origin + location.pathname;
+  let mode = "in", signedInAs = null;
+
+  const msg = (text, kind = "") => { $("authMsg").textContent = text; $("authMsg").className = `auth-msg ${kind}`; };
+  function setMode(m) {
+    mode = m;
+    for (const b of document.querySelectorAll("[data-auth]")) b.setAttribute("aria-pressed", b.dataset.auth === m);
+    $("authTabs").hidden = m === "reset";
+    $("usernameField").hidden = m !== "up";
+    $("emailField").hidden = m === "reset";
+    $("passwordField").querySelector("label").textContent = m === "reset" ? "סיסמה חדשה" : "סיסמה";
+    $("authPass").autocomplete = m === "in" ? "current-password" : "new-password";
+    $("authSubmit").textContent = { in: "כניסה", up: "הרשמה", reset: "שמירת סיסמה חדשה" }[m];
+    $("forgotBtn").hidden = m !== "in";
+    msg("");
+  }
+  const showAuth = (show) => { $("auth").hidden = !show; };
+
+  async function signedIn(user) {
+    if (signedInAs === user.id) return;
+    signedInAs = user.id;
+    showAuth(false);
+    $("viewerName").textContent = `שלום, ${user.user_metadata?.username || user.email}`;
+    $("signOutBtn").hidden = false;
+    $("viewer").hidden = false;
+    $("saveState").textContent = "טוען את הנתונים שלך…";
+    const { data, error } = await sb.from("user_state").select("picks, fav, settings").eq("user_id", user.id).maybeSingle();
+    if (error) { $("saveState").textContent = "לא הצלחתי לטעון את הנתונים שלך. רענן את הדף."; return; }
+    if (data) {
+      picks = picksFrom(data); rebuildSets(); fav = new Set(data.fav || []);
+      applySettings(data.settings);
+    }
+    remote = {
+      async save(d) {
+        const { error } = await sb.from("user_state").upsert({
+          user_id: user.id, picks: d.picks, fav: d.fav, settings: d.settings, updated_at: new Date().toISOString(),
+        });
+        if (error) throw error;
+      },
+    };
+    $("saveState").textContent = "הבחירות נשמרות בחשבון שלך";
+    syncControls(); compute(); render();
+  }
+  function signedOut() {
+    signedInAs = null; remote = null;
+    picks = []; rebuildSets(); fav = new Set();
+    $("viewer").hidden = true; $("signOutBtn").hidden = true;
+    render();
+    setMode("in");
+    showAuth(true);
+  }
+
+  for (const b of document.querySelectorAll("[data-auth]")) b.addEventListener("click", () => setMode(b.dataset.auth));
+  $("forgotBtn").addEventListener("click", async () => {
+    const email = $("authEmail").value.trim();
+    if (!email) return msg("כתוב את האימייל שלך למעלה ואז לחץ שוב על \"שכחתי סיסמה\".", "err");
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: here });
+    msg(error ? authText(error) : `שלחנו קישור לאיפוס סיסמה ל־${email}.`, error ? "err" : "ok");
+  });
+  $("authForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("authEmail").value.trim(), password = $("authPass").value, username = $("authUser").value.trim();
+    if (mode !== "reset" && !email) return msg("כתוב אימייל.", "err");
+    if (password.length < 6) return msg("הסיסמה צריכה להיות לפחות 6 תווים.", "err");
+    if (mode === "up" && !username) return msg("בחר שם משתמש.", "err");
+    $("authSubmit").disabled = true;
+    try {
+      if (mode === "in") {
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) msg(authText(error), "err");
+      } else if (mode === "up") {
+        const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username }, emailRedirectTo: here } });
+        if (error) msg(authText(error), "err");
+        else if (!data.session) msg(`נרשמת! שלחנו מייל אימות ל־${email}. אשר אותו ואז היכנס.`, "ok");
+      } else {
+        const { error } = await sb.auth.updateUser({ password });
+        if (error) msg(authText(error), "err");
+        else { msg("הסיסמה עודכנה.", "ok"); const { data } = await sb.auth.getUser(); if (data.user) signedIn(data.user); }
+      }
+    } finally { $("authSubmit").disabled = false; }
+  });
+  $("signOutBtn").addEventListener("click", () => sb.auth.signOut());
+
+  sb.auth.onAuthStateChange((event, session) => {
+    // Supabase calls back while holding its auth lock; do the work after it returns
+    setTimeout(() => {
+      if (event === "PASSWORD_RECOVERY") { setMode("reset"); showAuth(true); return; }
+      if (session?.user) signedIn(session.user); else signedOut();
+    }, 0);
+  });
+}
+
+// ---------- controls ----------
+function syncControls() {
+  for (const b of document.querySelectorAll("[data-fmt]")) b.setAttribute("aria-pressed", b.dataset.fmt === st.fmt);
+  for (const b of document.querySelectorAll("[data-mode]")) b.setAttribute("aria-pressed", b.dataset.mode === st.mode);
+  for (const b of document.querySelectorAll("[data-pos]")) b.setAttribute("aria-pressed", st.pos.has(b.dataset.pos));
+  for (const b of document.querySelectorAll("[data-punt]")) b.setAttribute("aria-pressed", st.punts.has(b.dataset.punt));
+  $("puntField").hidden = st.fmt !== "cat"; $("ptsHint").hidden = st.fmt !== "pts";
+  $("teams").value = st.teams; $("roster").value = st.roster; $("q").value = st.q;
+  $("minGp").value = st.minGp; $("minGpOut").textContent = st.minGp;
+  $("minMin").value = st.minMin; $("minMinOut").textContent = st.minMin;
+  $("team").value = st.team; $("maxAge").value = st.maxAge;
+  $("myPos").value = st.myPos; $("snake").checked = st.snake;
+  for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", b.dataset.tab === st.tab);
+  $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv";
+  $("onlyFav").checked = st.onlyFav;
+  for (const b of document.querySelectorAll("[data-role]")) b.setAttribute("aria-pressed", st.roles.includes(b.dataset.role));
+  for (const b of document.querySelectorAll("[data-inj]")) b.setAttribute("aria-pressed", b.dataset.inj === st.inj);
+  for (const b of document.querySelectorAll("[data-rk]")) b.setAttribute("aria-pressed", b.dataset.rk === st.rookies);
+  fillSort();
+  $("hideTaken").checked = st.hideTaken; $("onlyMoved").checked = st.onlyMoved; $("onlySleepers").checked = st.onlySleepers;
+}
+function update(recompute = true) {
+  saveSettings(); syncControls();
+  if (recompute) compute();
+  render();
+}
+
+$("puntChips").innerHTML = CATS.map((c) => `<button class="chip punt" data-punt="${c.k}" aria-pressed="false">${c.l}</button>`).join("");
+const teams = [...new Set(players.map((p) => p.team26).filter(Boolean))].sort();
+$("team").innerHTML = `<option value="">כל הקבוצות</option>` + teams.map((t) => `<option>${t}</option>`).join("") + `<option value="-">ללא קבוצה (FA)</option>`;
+
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("button, th[data-k], th[data-ak]");
+  if (!t) return;
+  if (t.dataset.role) {
+    const r = t.dataset.role;
+    st.roles = st.roles.includes(r) ? st.roles.filter((x) => x !== r) : [...st.roles, r];
+    return update(false);
+  }
+  if (t.dataset.distteam) { st.team = st.team === t.dataset.distteam ? "" : t.dataset.distteam; return update(false); }
+  if (t.dataset.inj) { st.inj = t.dataset.inj; return update(false); }
+  if (t.dataset.rk) { st.rookies = t.dataset.rk; return update(false); }
+  if (t.dataset.tab) { st.tab = t.dataset.tab; return update(false); }
+  if (t.dataset.ak) {
+    const col = ADV_COLS.find((c) => c.k === t.dataset.ak);
+    if (st.advSort === col.k) st.advAsc = !st.advAsc; else { st.advSort = col.k; st.advAsc = col.asc; }
+    return update(false);
+  }
+  if (t.dataset.fmt) { st.fmt = t.dataset.fmt; return update(); }
+  if (t.dataset.mode) { st.mode = t.dataset.mode; return update(); }
+  if (t.dataset.pos) { st.pos.has(t.dataset.pos) ? st.pos.delete(t.dataset.pos) : st.pos.add(t.dataset.pos); return update(false); }
+  if (t.dataset.punt) { st.punts.has(t.dataset.punt) ? st.punts.delete(t.dataset.punt) : st.punts.add(t.dataset.punt); return update(); }
+  if (t.dataset.k) {
+    const col = COLS.find((c) => c.k === t.dataset.k);
+    if (st.sort === col.k) st.asc = !st.asc; else { st.sort = col.k; st.asc = col.asc; }
+    return update(false);
+  }
+  if (t.dataset.a) {
+    const id = Number(t.dataset.id);
+    if (t.dataset.a === "fav") { fav.has(id) ? fav.delete(id) : fav.add(id); }
+    else {
+      const who = t.dataset.a === "mine" ? "m" : "t";
+      const i = picks.findIndex((x) => x.id === id);
+      if (i < 0) picks.push({ id, who });            // new pick goes to the end of the order
+      else if (picks[i].who === who) picks.splice(i, 1); // clicking again removes it
+      else picks[i] = { id, who };                    // switching keeps its place in the order
+      rebuildSets();
+    }
+    render(); flushPicks();
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches("th[data-k], th[data-ak]")) { e.preventDefault(); e.target.click(); }
+});
+
+let resetTimer = null;
+$("resetBtn").addEventListener("click", (e) => {
+  const b = e.currentTarget;
+  if (!b.classList.contains("armed")) {
+    b.classList.add("armed"); b.textContent = "לחץ שוב כדי למחוק את כל הבחירות";
+    resetTimer = setTimeout(() => { b.classList.remove("armed"); b.textContent = "איפוס הדראפט"; }, 4000);
+    return;
+  }
+  clearTimeout(resetTimer);
+  b.classList.remove("armed"); b.textContent = "איפוס הדראפט";
+  picks = []; rebuildSets(); render(); flushPicks();
+});
+
+// ---------- sort menu ----------
+const SORT_OPTS = {
+  board: [
+    { k: "rank", l: "דירוג", asc: true },
+    { k: "zTotal", l: "ערך 9 קטגוריות (Z)", asc: false },
+    { k: "fp", l: "נקודות פנטזי (FPTS)", asc: false },
+    { k: "PTS", l: "נקודות (PTS)", asc: false },
+    { k: "REB", l: "ריבאונדים (REB)", asc: false },
+    { k: "AST", l: "אסיסטים (AST)", asc: false },
+    { k: "STL", l: "חטיפות (STL)", asc: false },
+    { k: "BLK", l: "חסימות (BLK)", asc: false },
+    { k: "FG3M", l: "שלשות (3PM)", asc: false },
+    { k: "FG_RAW", l: "FG% – האחוז עצמו", asc: false },
+    { k: "FG_PCT", l: "FG% – השפעה על הקטגוריה", asc: false },
+    { k: "FT_RAW", l: "FT% – האחוז עצמו", asc: false },
+    { k: "FT_PCT", l: "FT% – השפעה על הקטגוריה", asc: false },
+    { k: "TOV", l: "איבודים (TOV) – הכי מעט", asc: true },
+    { k: "MIN", l: "דקות למשחק (MIN)", asc: false },
+    { k: "gp", l: "משחקים (GP)", asc: false },
+    { k: "age", l: "גיל", asc: true },
+    { k: "gap", l: "פער ל־36 דקות", asc: false },
+    { k: "trend", l: "מגמה: אחרי האולסטאר פחות לפני", asc: false },
+    { k: "name", l: "שם", asc: true },
+  ],
+  adv: [
+    { k: "USG", l: "USG%", asc: false },
+    { k: "PACE", l: "PACE", asc: false },
+    { k: "ORTG", l: "ORTG", asc: false },
+    { k: "TPACE", l: "TEAM PACE 25-26 (הקבוצה החדשה)", asc: false },
+    { k: "rank", l: "דירוג פנטזי", asc: true },
+    { k: "min", l: "דקות למשחק (MIN)", asc: false },
+    { k: "gp", l: "משחקים (GP)", asc: false },
+    { k: "name", l: "שם", asc: true },
+  ],
+};
+function fillSort() {
+  const adv = st.tab === "adv";
+  const cur = adv ? st.advSort : st.sort, asc = adv ? st.advAsc : st.asc;
+  const opts = SORT_OPTS[st.tab];
+  const known = opts.some((o) => o.k === cur);
+  $("sortBy").innerHTML = (known ? "" : `<option value="${esc(cur)}">לפי עמודה בטבלה</option>`) +
+    opts.map((o) => `<option value="${o.k}">${esc(o.l)}</option>`).join("");
+  $("sortBy").value = cur;
+  $("sortDir").textContent = asc ? "↑ עולה" : "↓ יורד";
+  $("sortDir").setAttribute("aria-label", asc ? "סדר עולה, לחץ להפוך" : "סדר יורד, לחץ להפוך");
+}
+$("sortBy").addEventListener("change", (e) => {
+  const o = SORT_OPTS[st.tab].find((x) => x.k === e.target.value);
+  if (!o) return;
+  if (st.tab === "adv") { st.advSort = o.k; st.advAsc = o.asc; } else { st.sort = o.k; st.asc = o.asc; }
+  update(false);
+});
+$("sortDir").addEventListener("click", () => {
+  if (st.tab === "adv") st.advAsc = !st.advAsc; else st.asc = !st.asc;
+  update(false);
+});
+
+const num = (id, key, lo, hi, re = true) => $(id).addEventListener("input", (e) => {
+  const v = Number(e.target.value); if (!Number.isFinite(v)) return;
+  st[key] = Math.min(hi, Math.max(lo, v)); update(re);
+});
+num("teams", "teams", 4, 30); num("roster", "roster", 5, 20);
+num("minGp", "minGp", 10, 82); num("minMin", "minMin", 0, 36);
+num("maxAge", "maxAge", 19, 42, false);
+num("myPos", "myPos", 1, 30, false);
+$("snake").addEventListener("change", (e) => { st.snake = e.target.checked; update(false); });
+$("undoBtn").addEventListener("click", () => {
+  if (!picks.length) return;
+  picks.pop(); rebuildSets(); render(); flushPicks();
+});
+$("q").addEventListener("input", (e) => { st.q = e.target.value; update(false); });
+$("team").addEventListener("change", (e) => { st.team = e.target.value; update(false); });
+for (const id of ["hideTaken", "onlyMoved", "onlySleepers", "onlyFav"]) $(id).addEventListener("change", (e) => { st[id] = e.target.checked; update(false); });
+
+syncControls(); compute(); render();
+if (SITE) connectSite(); else connectStore();
+</script>
