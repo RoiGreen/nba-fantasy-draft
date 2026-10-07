@@ -904,6 +904,7 @@ const AUTH_ERRORS = {
   "Email not confirmed": "צריך קודם לאשר את המייל. בדוק את תיבת הדואר (וגם את הספאם).",
   "User already registered": "כבר יש משתמש עם המייל הזה. נסה להיכנס.",
   "Password should be at least 6 characters.": "הסיסמה צריכה להיות לפחות 6 תווים.",
+  "email rate limit exceeded": "נשלחו יותר מדי מיילים בזמן קצר. נסה שוב בעוד שעה.",
 };
 const authText = (e) => AUTH_ERRORS[e?.message] || `משהו השתבש: ${e?.message || "נסה שוב"}`;
 
