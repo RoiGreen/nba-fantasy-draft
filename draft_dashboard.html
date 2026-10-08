@@ -326,6 +326,9 @@ table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px
 .cmpchips .swbtn { font-size: .78rem; font-weight: 600; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; background: var(--surface); color: var(--muted); }
 .cmpchips .swbtn:hover { color: var(--accent); border-color: var(--accent); }
 .cmpchips li.swapped { background: color-mix(in srgb, var(--pos) 14%, var(--sunk)); }
+.cmpchips li.dropped { background: color-mix(in srgb, var(--neg) 10%, var(--sunk)); }
+.cmpchips li.dropped s { color: var(--muted); font-weight: 600; }
+.cmpchips .acts2 { display: inline-flex; gap: 6px; align-items: center; }
 .cmpchips li.swapped s, .cmpchips li.swapping s { color: var(--muted); font-weight: 600; }
 .cmpchips li.swapping { grid-template-columns: auto minmax(0, 1fr) auto; }
 .cmpchips li.swapping input { min-width: 0; font: inherit; font-size: .85rem; padding: 3px 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--surface); color: var(--ink); }
@@ -1624,8 +1627,17 @@ function cmpBase(side) {
 function cmpPlayers(side) {
   const base = cmpBase(side);
   if (st.cmp.mode !== "teams") return base;
-  const sw = new Map(st.cmp.sw[side]);
-  return base.map((p) => (sw.has(p.id) ? PLAYER_BY_ID.get(sw.get(p.id)) : p)).filter(Boolean);
+  const edits = st.cmp.sw[side];
+  const out = new Map(edits.filter(([o]) => o != null));
+  const kept = base.map((p) => (out.has(p.id) ? (out.get(p.id) == null ? null : PLAYER_BY_ID.get(out.get(p.id))) : p));
+  const added = edits.filter(([o, i]) => o == null && i != null).map(([, i]) => PLAYER_BY_ID.get(i));
+  return [...kept, ...added].filter(Boolean);
+}
+// Players who can join a team being edited: anyone on neither of the two teams compared, best first
+function cmpFreeForTeams() {
+  const rank = last.now.rank;
+  const on = new Set([...cmpPlayers("a"), ...cmpPlayers("b")].map((p) => p.id));
+  return players.filter((p) => p.L && !on.has(p.id)).sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
 }
 let cmpSwapping = null;  // {side, id}: the player whose replacement is being picked
 let CMP_SW_LOOKUP = new Map();
@@ -1673,10 +1685,17 @@ function renderCmpSide(side) {
   if (M.team) {
     const n = Math.max(st.teams, 1);
     const opts = Array.from({ length: n }, (_, i) =>
-      `<option value="${i}">${esc(teamName(i))}${i === myIdx() ? " (אני)" : ""} · ${picks.filter((x) => x.team === i).length} שחקנים</option>`).join("");
-    if (box.dataset.mode !== "teams") { box.innerHTML = `<select data-cmpteam="${side}" aria-label="${M[side]}"></select>`; box.dataset.mode = "teams"; }
-    const sel = box.querySelector("select");
+      `<option value="${i}">${esc(teamName(i))} · ${picks.filter((x) => x.team === i).length} שחקנים</option>`).join("");
+    if (box.dataset.mode !== "teams") {
+      box.innerHTML = `<select data-cmpteam="${side}" aria-label="${M[side]}"></select><select data-cmpteamadd="${side}" aria-label="הוספת שחקן לקבוצה"></select>`;
+      box.dataset.mode = "teams";
+    }
+    const sel = box.querySelector("[data-cmpteam]"), addSel = box.querySelector("[data-cmpteamadd]");
     if (sel !== document.activeElement) { sel.innerHTML = opts; sel.value = String(side === "a" ? c.ta : c.tb); }
+    if (addSel !== document.activeElement) {
+      addSel.innerHTML = `<option value="">הוסף שחקן</option>` + cmpFreeForTeams().slice(0, 500).map((p) =>
+        `<option value="${p.id}">${rank.has(p.id) ? `#${rank.get(p.id)} ` : ""}${esc(p.name)} · ${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</option>`).join("");
+    }
   } else if (c.mode === "trade" || c.mode === "players") {
     if (box.dataset.mode !== "trade") {
       box.innerHTML = `<select data-cmptt="${side}" aria-label="בחר קבוצה"></select><select data-cmptp="${side}" aria-label="בחר שחקן"></select>`;
@@ -1692,7 +1711,7 @@ function renderCmpSide(side) {
     const tsel = box.querySelector("[data-cmptt]"), psel = box.querySelector("[data-cmptp]");
     if (tsel !== document.activeElement) {
       tsel.innerHTML = Array.from({ length: n }, (_, i) =>
-        `<option value="${i}">${esc(teamName(i))}${i === myIdx() ? " (אני)" : ""} · ${picks.filter((x) => x.team === i).length} שחקנים</option>`).join("") +
+        `<option value="${i}">${esc(teamName(i))} · ${picks.filter((x) => x.team === i).length} שחקנים</option>`).join("") +
         `<option value="free">שחקנים שלא נבחרו</option><option value="all">כל השחקנים</option>`;
       tsel.value = c[key];
     }
@@ -1702,7 +1721,7 @@ function renderCmpSide(side) {
       : picks.filter((x) => x.team === Number(c[key])).map((x) => PLAYER_BY_ID.get(x.id)).filter(Boolean);
     const pool = from.filter((p) => !added.has(p.id)).sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
     if (psel !== document.activeElement) {
-      psel.innerHTML = `<option value="">${pool.length ? `בחר שחקן (${pool.length})` : "אין שחקנים בקבוצה הזו"}</option>` +
+      psel.innerHTML = `<option value="">${pool.length ? "בחר שחקן" : "אין שחקנים בקבוצה הזו"}</option>` +
         pool.slice(0, 500).map((p) => `<option value="${p.id}">${rank.has(p.id) ? `#${rank.get(p.id)} ` : ""}${esc(p.name)} · ${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</option>`).join("");
     }
   } else {
@@ -1722,8 +1741,12 @@ function renderCmpSide(side) {
   chips.hidden = folded;
   if (!folded) {
     if (M.team) {
-      const sw = new Map(c.sw[side]);
+      const sw = new Map(c.sw[side].filter(([o]) => o != null));
       chips.innerHTML = cmpBase(side).map((p) => {
+        if (sw.has(p.id) && sw.get(p.id) == null) {
+          return `<li class="dropped"><span class="nm"><s>${esc(p.name)}</s> <small>הוסר</small></span><span></span>` +
+            `<button type="button" data-cmpundo="${side}:${p.id}" title="החזרה לקבוצה" aria-label="החזרת ${esc(p.name)}">↶</button></li>`;
+        }
         if (sw.has(p.id)) {
           const q = PLAYER_BY_ID.get(sw.get(p.id));
           return `<li class="swapped"><span class="nm"><s>${esc(p.name)}</s> ← ${who(q)}</span><span class="zv">${val(q)}</span>` +
@@ -1734,13 +1757,18 @@ function renderCmpSide(side) {
             `<input data-cmpswin="${side}" list="cmpSwList" placeholder="שחקן במקומו…" autocomplete="off" aria-label="שחקן במקום ${esc(p.name)}">` +
             `<button type="button" data-cmpswcancel="1" title="ביטול" aria-label="ביטול">✕</button></li>`;
         }
-        return `<li><span class="nm">${who(p)}</span><span class="zv">${val(p)}</span>` +
-          `<button type="button" class="swbtn" data-cmpsw="${side}:${p.id}" title="להוריד אותו ולשים מישהו אחר במקומו">החלף</button></li>`;
-      }).join("") || `<li class="empty">אין עדיין שחקנים בקבוצה הזו בחדר הדראפט.</li>`;
+        return `<li class="edit"><span class="nm">${who(p)}</span><span class="zv">${val(p)}</span><span class="acts2">` +
+          `<button type="button" class="swbtn" data-cmpsw="${side}:${p.id}" title="להוריד אותו ולשים מישהו אחר במקומו">החלף</button>` +
+          `<button type="button" data-cmpdrop="${side}:${p.id}" title="הסרה מהקבוצה" aria-label="הסרת ${esc(p.name)}">✕</button></span></li>`;
+      }).join("") + c.sw[side].filter(([o, i]) => o == null && i != null).map(([, i]) => {
+        const q = PLAYER_BY_ID.get(i);
+        return q ? `<li class="swapped"><span class="nm">+ ${who(q)}</span><span class="zv">${val(q)}</span>` +
+          `<button type="button" data-cmpundoadd="${side}:${q.id}" title="הסרת השחקן שנוסף" aria-label="הסרת ${esc(q.name)}">↶</button></li>` : "";
+      }).join("");
     } else {
       chips.innerHTML = cmpPlayers(side).map((p) => `<li><span class="nm">${who(p)}</span><span class="zv">${val(p)}</span>` +
         `<button type="button" data-cmprm="${side}:${p.id}" aria-label="הסרת ${esc(p.name)}" title="הסרה">✕</button></li>`).join("")
-        || `<li class="empty">עוד לא נבחר שחקן.</li>`;
+        || "";
     }
   }
   // What the swaps change for this team: after minus before
@@ -1752,15 +1780,13 @@ function renderCmpSide(side) {
       const cls = punted || Math.abs(d) < 1e-9 ? "" : (d > 0) !== !!low ? "up" : "dn";
       return `<span class="${cls}${punted ? " punted" : ""}">${l} ${d >= 0 ? "+" : "−"}${f(Math.abs(d))}</span>`;
     };
-    dl.innerHTML = `<div class="dh"><b>השינוי בעקבות ${c.sw[side].length === 1 ? "החילוף" : `${c.sw[side].length} החילופים`}</b>` +
-      `<button type="button" data-cmpswreset="${side}">ביטול כל החילופים</button></div><div class="dv">` +
+    dl.innerHTML = `<div class="dh"><b>השינוי בסגל</b>` +
+      `<button type="button" data-cmpswreset="${side}">ביטול כל השינויים</button></div><div class="dv">` +
       CATS.map((k) => item(k.l, B1[k.k] - B0[k.k], k.k.endsWith("_PCT") ? fmt3 : fmt1, k.k === "TOV", st.punts.has(k.k))).join("") +
       item("Z", B1.Z - B0.Z, (v) => v.toFixed(2)) + item("FPTS", B1.FPTS - B0.FPTS, fmt1) + `</div>`;
   }
   if (cmpSwapping && cmpSwapping.side === side) {
-    // Anyone not already on either of the two teams compared can come in
-    const on = new Set([...cmpPlayers("a"), ...cmpPlayers("b")].map((p) => p.id));
-    const pool = players.filter((p) => p.L && !on.has(p.id)).sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
+    const pool = cmpFreeForTeams();
     CMP_SW_LOOKUP = new Map(pool.map((p) => [pickValue(p, rank.get(p.id)), p.id]));
     $("cmpSwList").innerHTML = pool.slice(0, 500).map((p) => `<option value="${esc(pickValue(p, rank.get(p.id)))}"></option>`).join("");
     chips.querySelector("[data-cmpswin]")?.focus();
@@ -1810,7 +1836,7 @@ function renderCmp() {
   const LA = cmpPlayers("a"), LB = cmpPlayers("b");
   const out = $("cmpOut");
   if (!LA.length || !LB.length) {
-    out.innerHTML = `<p class="empty">${M.team ? "בחר שתי קבוצות שיש בהן שחקנים מחדר הדראפט." : `בחר שחקנים בשני הצדדים: ${M.a} ו${M.b}.`}</p>`;
+    out.innerHTML = "";
     return;
   }
   const A = cmpTotals(LA), B = cmpTotals(LB);
@@ -1890,12 +1916,20 @@ $("viewCmp").addEventListener("click", (e) => {
   else if (t.dataset.cmpsw) { const [side, id] = t.dataset.cmpsw.split(":"); cmpSwapping = { side, id: Number(id) }; return renderCmp(); }
   else if (t.dataset.cmpswcancel) { cmpSwapping = null; return renderCmp(); }
   else if (t.dataset.cmpundo) { const [side, id] = t.dataset.cmpundo.split(":"); c.sw[side] = c.sw[side].filter(([o]) => o !== Number(id)); }
+  else if (t.dataset.cmpundoadd) { const [side, id] = t.dataset.cmpundoadd.split(":"); c.sw[side] = c.sw[side].filter(([o, i]) => !(o == null && i === Number(id))); }
+  else if (t.dataset.cmpdrop) { const [side, id] = t.dataset.cmpdrop.split(":"); c.sw[side] = [...c.sw[side].filter(([o]) => o !== Number(id)), [Number(id), null]]; }
   else if (t.dataset.cmpswreset) c.sw[t.dataset.cmpswreset] = [];
   else return;
   saveSettings(); renderCmp();
 });
 $("viewCmp").addEventListener("change", (e) => {
-  const tt = e.target.closest("[data-cmptt]"), tp = e.target.closest("[data-cmptp]");
+  const tt = e.target.closest("[data-cmptt]"), tp = e.target.closest("[data-cmptp]"), ta = e.target.closest("[data-cmpteamadd]");
+  if (ta) {
+    const id = Number(ta.value);
+    if (id) st.cmp.sw[ta.dataset.cmpteamadd] = [...st.cmp.sw[ta.dataset.cmpteamadd], [null, id]];
+    ta.blur();
+    saveSettings(); return renderCmp();
+  }
   if (tt) { st.cmp["tt" + tt.dataset.cmptt] = tt.value; saveSettings(); return renderCmp(); }
   if (tp) {
     const side = tp.dataset.cmptp, id = Number(tp.value);
