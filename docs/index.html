@@ -312,9 +312,9 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <div class="field">
           <span class="lbl">עמדה</span>
           <div class="chips" id="posChips">
-            <button class="chip" data-pos="G" aria-pressed="false">G</button>
-            <button class="chip" data-pos="F" aria-pressed="false">F</button>
-            <button class="chip" data-pos="C" aria-pressed="false">C</button>
+            <button class="chip" data-pos="G" aria-pressed="false">Guard</button>
+            <button class="chip" data-pos="F" aria-pressed="false">Forward</button>
+            <button class="chip" data-pos="C" aria-pressed="false">Center</button>
           </div>
         </div>
         <div class="field">
@@ -768,7 +768,8 @@ function positionRank() {
   const order = list.filter((p) => (p.pos || "").includes(pos)).sort((a, b) => now.rank.get(a.id) - now.rank.get(b.id));
   return { pos, rank: new Map(order.map((p, i) => [p.id, i + 1])) };
 }
-const posTh = (pr) => pr ? `<th class="nosort" scope="col">${pr.pos} RANK</th>` : "";
+const POS_NAMES = { G: "Guard", F: "Forward", C: "Center" };
+const posTh = (pr) => pr ? `<th class="nosort" scope="col">${POS_NAMES[pr.pos]} RANK</th>` : "";
 const posTd = (pr, p) => pr ? `<td class="rank" style="color:var(--mine)">${pr.rank.get(p.id) ?? "–"}</td>` : "";
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
