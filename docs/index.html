@@ -359,7 +359,7 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
 <div class="wrap">
   <header class="top">
     <div>
-      <h1><span id="pageTitle">נתונים כלליים</span> <span class="yr">2026-27</span></h1>
+      <h1><span id="pageTitle">נתונים כלליים</span> <span class="yr" id="pageYear" hidden>2026-27</span></h1>
       <p class="sub" id="subTitle">מבוסס על סטטיסטיקה רשמית של ה־NBA. הדירוג מחושב מחדש עם כל סינון.</p>
     </div>
     <div style="display:grid;gap:4px;justify-items:end">
@@ -1791,6 +1791,7 @@ function syncControls() {
   for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", b.dataset.tab === st.tab);
   // The page title follows the open tab
   $("pageTitle").textContent = { board: "נתונים כלליים", adv: "נתונים מתקדמים", draft: "חדר הדראפט" }[st.tab] || "נתונים כלליים";
+  $("pageYear").hidden = st.tab !== "draft";  // the season shows only in the draft room
   $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv"; $("viewDraft").hidden = st.tab !== "draft";
   // The table search does nothing in the draft room (it has its own pick box), so it is hidden there
   document.querySelector(".topsearch").hidden = st.tab === "draft";
