@@ -113,6 +113,7 @@ td { font-family: var(--font-num); font-size: 1rem; }
 td.name { text-align: start; font-family: var(--font-body); font-size: .95rem; }
 td.name .n { font-weight: 700; }
 td.name .nc { display: flex; align-items: center; gap: 8px; }
+td.name .avatar { width: 30px; height: 30px; border-radius: 50%; flex: none; background: var(--sunk); object-fit: cover; }
 td.name .t { display: inline-flex; align-items: center; gap: 6px; direction: ltr; unicode-bidi: isolate; color: var(--muted); font-size: .8rem; font-family: var(--font-num); letter-spacing: .03em; }
 td.name .moved { color: var(--accent); font-weight: 700; font-size: .9rem; }
 td.name .moved b { color: var(--ink); font-weight: 700; }
@@ -831,7 +832,7 @@ function nameCell(p) {
     : `${rk}${inj}${esc(p.team26)}`;
   const n = picks.findIndex((x) => x.id === p.id);
   const chip = n >= 0 ? `<span class="pickchip" title="בחירה ${n + 1} בדראפט">${pickLabel(n + 1)}</span>` : "";
-  return `<td class="name"><div class="nc"><span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span>${injuryPill(p)}</div></td>`;
+  return `<td class="name"><div class="nc">${p.img ? `<img class="avatar" src="${p.img}" alt="" loading="lazy">` : `<span class="avatar"></span>`}<span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span>${injuryPill(p)}</div></td>`;
 }
 
 // Availability: share of the 82 games played over the last three seasons he was in the league

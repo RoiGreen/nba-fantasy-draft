@@ -9,6 +9,7 @@ Every player carries his 2023-24, 2024-25 and 2025-26 lines; the page picks the 
 so rankings, the advanced tab, the team table and the importance panel all follow the season choice.
 """
 
+import base64
 import json
 import re
 import unicodedata
@@ -50,6 +51,7 @@ PRESEASON = 1026
 PRESEASON_LOGS = HERE / "nba_2026_27" / "game_logs_preseason.csv"
 INJURIES_CSV = HERE / "nba_2026_27" / "injuries.csv"  # ESPN injury list, from injuries.py
 INJURIES_STAMP = HERE / "nba_2026_27" / "injuries_updated.txt"
+HEADSHOTS = DATA / "headshots"  # 40x40 WebP thumbnails from headshots.py
 # Head-to-head: the last N regular-season games against each opponent, 2025-26 and 2026-27
 VS_GAMES = 4
 GAME_LOG_FILES = [DATA / "player_game_logs_regular.csv", CURRENT_LOGS]
@@ -274,6 +276,14 @@ def main() -> None:
     print(f"Left out {len(free_agents)} free agents")
     attach_injuries(players)
     attach_vs(players)
+    # Embedded, because claude.ai artifacts cannot load images from other sites
+    with_img = 0
+    for p in players:
+        f = HEADSHOTS / f"{p['id']}.webp"
+        if f.exists():
+            p["img"] = "data:image/webp;base64," + base64.b64encode(f.read_bytes()).decode()
+            with_img += 1
+    print(f"Headshots embedded for {with_img} players")
 
     pd.DataFrame([{
         "PLAYER_NAME": p["name"], "TEAM_2026_27": p["team26"], "AGE": p["age"],

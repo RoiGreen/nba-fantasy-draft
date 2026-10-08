@@ -20,6 +20,7 @@ from pathlib import Path
 import pandas as pd
 from nba_api.stats.endpoints import playergamelogs, playerindex
 
+from headshots import ensure_headshots
 from injuries import pull_injuries
 from nba_stats_2025_26 import fetch
 
@@ -48,6 +49,9 @@ def main() -> None:
     roster = fetch(playerindex.PlayerIndex, season=SEASON)
     roster.to_csv(HERE / "nba_2025_26" / "player_index_2026_27.csv", index=False, encoding="utf-8-sig")
     msg = f"Rosters: {roster['TEAM_ABBREVIATION'].notna().sum()} players on a 2026-27 team"
+    print(msg)
+    lines.append(msg)
+    msg = ensure_headshots(roster["PERSON_ID"])
     print(msg)
     lines.append(msg)
     msg = pull_injuries()
