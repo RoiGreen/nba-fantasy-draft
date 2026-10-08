@@ -360,7 +360,6 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
   <header class="top">
     <div>
       <h1><span id="pageTitle">נתונים כלליים</span> <span class="yr" id="pageYear" hidden>2026-27</span></h1>
-      <p class="sub" id="subTitle">מבוסס על סטטיסטיקה רשמית של ה־NBA. הדירוג מחושב מחדש עם כל סינון.</p>
     </div>
     <div style="display:grid;gap:4px;justify-items:end">
       <span class="viewer" id="viewer" hidden><img id="viewerAvatar" alt="" hidden><span id="viewerName"></span><button class="signout" id="signOutBtn" type="button" hidden>התנתקות</button></span>
@@ -1166,7 +1165,6 @@ function computeTeams() {
   const range = seasonRange();
   ADV_COLS.find((c) => c.k === "TPACE").l = `TEAM PACE ${range}`;
   $("teamTitle").textContent = `קבוצות ${range}`;
-  $("subTitle").textContent = `מבוסס על סטטיסטיקה רשמית של ה־NBA, עונות ${range}. הדירוג מחושב מחדש עם כל סינון.`;
 }
 
 // Importance panel and each player's role (key / rotation / bench) on his 2026-27 team
