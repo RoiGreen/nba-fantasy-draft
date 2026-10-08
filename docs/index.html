@@ -1228,23 +1228,28 @@ async function connectSite() {
 }
 
 // ---------- controls ----------
+// Leave a field alone while the user is typing in it, so selection and partial input survive
+function setField(id, v) {
+  const el = $(id);
+  if (el && el !== document.activeElement) el.value = v;
+}
 function syncControls() {
   for (const b of document.querySelectorAll("[data-fmt]")) b.setAttribute("aria-pressed", b.dataset.fmt === st.fmt);
   for (const b of document.querySelectorAll("[data-mode]")) b.setAttribute("aria-pressed", b.dataset.mode === st.mode);
   for (const b of document.querySelectorAll("[data-pos]")) b.setAttribute("aria-pressed", st.pos.has(b.dataset.pos));
   for (const b of document.querySelectorAll("[data-punt]")) b.setAttribute("aria-pressed", st.punts.has(b.dataset.punt));
   $("puntField").hidden = st.fmt !== "cat"; $("ptsHint").hidden = st.fmt !== "pts";
-  $("teams").value = st.teams; $("roster").value = st.roster; $("q").value = st.q;
+  setField("teams", st.teams); setField("roster", st.roster); setField("q", st.q);
   $("minGp").value = st.minGp; $("minGpOut").textContent = st.minGp;
   $("minMin").value = st.minMin; $("minMinOut").textContent = st.minMin;
   $("minCat").value = st.minCat;
-  $("minCatVal").value = st.minVal ? st.minVal : "";
+  setField("minCatVal", st.minVal ? st.minVal : "");
   $("minCatLabel").textContent = st.minCat === "TOV" ? "מקסימום לפי קטגוריה" : "מינימום לפי קטגוריה";
-  $("maxAge").value = st.maxAge;
+  setField("maxAge", st.maxAge);
   for (const b of document.querySelectorAll("[data-teamsel]")) b.setAttribute("aria-pressed", st.teamSel.includes(b.dataset.teamsel));
   $("teamSummary").textContent = !st.teamSel.length ? "כל הקבוצות"
     : st.teamSel.length <= 4 ? st.teamSel.map((t) => t === "-" ? "FA" : t).join(", ") : `${st.teamSel.length} קבוצות נבחרו`;
-  $("myPos").value = st.myPos; $("snake").checked = st.snake;
+  setField("myPos", st.myPos); $("snake").checked = st.snake;
   for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", b.dataset.tab === st.tab);
   $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv";
   $("onlyFav").checked = st.onlyFav;
@@ -1412,6 +1417,9 @@ $("undoBtn").addEventListener("click", () => {
 });
 $("q").addEventListener("input", (e) => { st.q = e.target.value; update(false); });
 for (const id of ["hideTaken", "onlyMoved", "onlyFav"]) $(id).addEventListener("change", (e) => { st[id] = e.target.checked; update(false); });
+
+// Clicking into a number field selects its value, so typing replaces it
+for (const el of document.querySelectorAll('input[type="number"]')) el.addEventListener("focus", () => el.select());
 
 syncControls(); compute(); render();
 if (SITE) connectSite(); else connectStore();
