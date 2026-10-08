@@ -114,7 +114,7 @@ td.name { text-align: start; font-family: var(--font-body); font-size: .95rem; }
 td.name .n { font-weight: 700; }
 td.name .nc { display: flex; align-items: center; gap: 8px; }
 td.name .nmeta { display: grid; gap: 1px; min-width: 0; }
-td.name .nline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+td.name .nline { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; white-space: nowrap; }  /* one line per player; the table scrolls sideways if needed */
 td.name .sched { font-size: .78rem; color: var(--muted); }
 td.name .sched b { color: var(--ink); font-weight: 600; }
 td.name .avatar { width: 30px; height: 30px; border-radius: 50%; flex: none; background: var(--sunk); object-fit: cover; }
