@@ -327,9 +327,10 @@ table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px
 .cmpsec { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px; display: grid; gap: 10px; }
 .cmpsec h3 { margin: 0; font-size: 1.05rem; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
 .cmpsec h3 small { font-size: .8rem; color: var(--muted); font-weight: 600; }
-.cmpgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cmpgrid { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
 @media (max-width: 900px) { .cmpgrid { grid-template-columns: minmax(0, 1fr); } }
-table.cmpt th, table.cmpt td { padding: 5px 8px; }
+table.cmpt th, table.cmpt td { padding: 4px 6px; font-size: .9rem; }
+table.cmpt th.ha, table.cmpt th.hb { max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
 table.cmpt thead th { cursor: default; }
 table.cmpt th.ha { color: var(--accent); } table.cmpt th.hb { color: var(--mine); }
 table.cmpt td.win { font-weight: 700; }
@@ -339,13 +340,13 @@ table.cmpt td.dif.da { color: var(--accent); font-weight: 700; } table.cmpt td.d
 table.cmpt tr.punted td { opacity: .4; text-decoration: line-through; }
 table.cmpt tr.tot td { border-top: 2px solid var(--line); font-weight: 700; }
 table.cmpt td.lbl { font-family: var(--font-num); font-weight: 700; text-align: start; }
-.vbars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; height: 280px; padding-top: 18px; }
+.vbars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; height: 340px; padding-top: 18px; }
 .vgrp { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 6px; min-width: 0; }
 .vgrp.punted { opacity: .35; }
 .vpair { position: relative; display: flex; justify-content: center; gap: 3px; border-bottom: 1px solid var(--line); }
 .vbars.z .vpair { border-bottom: 0; }
 .vbars.z .vpair::after { content: ""; position: absolute; inset-inline: 0; bottom: 50%; height: 1px; background: var(--muted); opacity: .6; }
-.vcol { position: relative; width: min(26px, 45%); }
+.vcol { position: relative; width: min(40px, 45%); }
 .vbar { position: absolute; inset-inline: 0; bottom: var(--b); height: var(--h); min-height: 2px; border-radius: 3px 3px 0 0; background: var(--c); }
 .vbar.neg { border-radius: 0 0 3px 3px; }
 .vbar.a { --c: color-mix(in srgb, var(--accent) 75%, transparent); } .vbar.b { --c: color-mix(in srgb, var(--mine) 75%, transparent); }
