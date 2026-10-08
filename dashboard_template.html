@@ -698,6 +698,7 @@ let picks = [];
 const myIdx = () => Math.min(Math.max(st.myPos, 1), Math.max(st.teams, 1)) - 1;
 const teamName = (i) => (st.teamNames[i] || "").trim() || `קבוצה ${i + 1}`;
 function rebuildSets() {
+  DRAFT = draftState();
   draftTaken = new Set(picks.filter((x) => x.team !== myIdx()).map((x) => x.id));
   draftMine = new Set(picks.filter((x) => x.team === myIdx()).map((x) => x.id));
   // Table tags ("נלקח" / "שלי" in the table) are personal notes for waivers and upcoming picks,
@@ -945,8 +946,8 @@ function nameCell(p) {
   const team = !p.team26 ? `${rk}${inj}<span title="ללא קבוצה ל־2026-27">FA</span>`
     : hasMoved(p) ? `${rk}${inj}<span class="moved" title="עבר מ־${esc(from)} ל־${esc(p.team26)}">${esc(from)} → <b>${esc(p.team26)}</b></span>`
     : `${rk}${inj}${esc(p.team26)}`;
-  const n = picks.findIndex((x) => x.id === p.id);
-  const chip = n >= 0 ? `<span class="pickchip" title="בחירה ${n + 1} בדראפט">${pickLabel(n + 1)}</span>` : "";
+  const lab = DRAFT.labels.get(p.id);
+  const chip = lab ? `<span class="pickchip" title="בחירה ${DRAFT.overall.get(p.id)} בדראפט">${lab}</span>` : "";
   return `<td class="name"><div class="nc">${p.img ? `<img class="avatar" src="${p.img}" alt="" loading="lazy">` : `<span class="avatar"></span>`}<div class="nmeta"><div class="nline"><span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span>${injuryPill(p)}</div>${scheduleLine(p)}</div></div></td>`;
 }
 
@@ -1260,6 +1261,24 @@ function renderAdv() {
 
 
 const pickIndex = () => new Map(picks.map((x, i) => [x.id, i + 1]));
+// Pick numbers come from the team and its round (a team's 2nd pick is in round 2 at that team's slot),
+// not from the order the picks were typed in. The team on the clock is the first slot, in draft order,
+// whose team has not yet picked in that round.
+function draftState() {
+  const n = Math.max(st.teams, 1), counts = Array(n).fill(0), labels = new Map(), overall = new Map();
+  for (const x of picks) {
+    if (x.team >= n) continue;
+    const r = ++counts[x.team];
+    const inRound = st.snake && r % 2 === 0 ? n - x.team : x.team + 1;
+    labels.set(x.id, `${r}.${String(inRound).padStart(2, "0")}`);
+    overall.set(x.id, (r - 1) * n + inRound);
+  }
+  const open = (k) => counts[slotOf(k) - 1] < Math.ceil(k / n);
+  let next = 1;
+  while (!open(next) && next < n * 100) next++;
+  return { labels, overall, counts, next, onClock: slotOf(next) - 1, open };
+}
+let DRAFT = { labels: new Map(), overall: new Map(), counts: [], next: 1, onClock: 0, open: () => true };
 function pickLabel(n) {
   const t = Math.max(1, st.teams);
   const round = Math.ceil(n / t), inRound = n - (round - 1) * t;
@@ -1335,14 +1354,21 @@ function renderDraft() {
   syncTeamNames();
   const byId = new Map(players.map((p) => [p.id, p]));
   const n = Math.max(st.teams, 1), me = myIdx();
-  const next = picks.length + 1, onClock = slotOf(next) - 1;
+  const { next, onClock } = DRAFT;
+  // Picks until my turn: open slots from the one on the clock until mine
   let wait = 0;
-  while (slotOf(next + wait) - 1 !== me && wait < n * 2) wait++;
+  for (let k = next; k < next + n * 3; k++) {
+    if (!DRAFT.open(k)) continue;
+    if (slotOf(k) - 1 === me) break;
+    wait++;
+  }
+  let myK = next;
+  while ((slotOf(myK) - 1 !== me || !DRAFT.open(myK)) && myK < next + n * 3) myK++;
   const league = st.leagueName ? `<span>${esc(st.leagueName)}</span>` : "";
   const clock = $("clock");
   clock.classList.toggle("you", wait === 0);
   clock.innerHTML = `${league}<span class="big">${wait === 0 ? "התור שלך" : `על השעון: ${esc(teamName(onClock))}`} · ${pickLabel(next)}</span>` +
-    `<span>בחירה ${next} בסך הכול${wait ? ` · עוד ${wait} בחירות עד התור שלך (${pickLabel(next + wait)})` : ""}</span>`;
+    `<span>בחירה ${next} בסך הכול${wait ? ` · עוד ${wait} בחירות עד התור שלך (${pickLabel(myK)})` : ""}</span>`;
 
   // Who picks next: the team on the clock unless the user chooses another
   const teamOpts = Array.from({ length: n }, (_, i) => `<option value="${i}">${esc(teamName(i))}${i === me ? " (אני)" : ""}</option>`).join("");
@@ -1380,7 +1406,7 @@ function renderDraft() {
   $("dbBody").innerHTML = Array.from({ length: rounds }, (_, r) => `<tr><td class="rank">${r + 1}</td>` + byTeam.map((t, i) => {
     const x = t[r];
     const pl = x && byId.get(x.id);
-    return `<td class="${i === me ? "me" : ""}">${pl ? `<span class="dcell"><span class="pk">${pickLabel(x.no)}</span><span class="dn">${esc(pl.name)}</span></span>` : ""}</td>`;
+    return `<td class="${i === me ? "me" : ""}">${pl ? `<span class="dcell"><span class="pk">${DRAFT.labels.get(x.id)}</span><span class="dn">${esc(pl.name)}</span></span>` : ""}</td>`;
   }).join("") + `</tr>`).join("");
   const zAll = last.now.z, m = st.mode;
   const value = (id) => { const pl = byId.get(id); if (!pl) return 0; return st.fmt === "cat" ? (zAll.get(id)?.total ?? 0) : (pl.F?.[m] ?? 0); };
@@ -1390,7 +1416,7 @@ function renderDraft() {
 }
 
 function renderMine() {
-  const order = pickIndex();
+  const order = new Map([...DRAFT.overall].map(([id, k]) => [id, k]));
   const mp = players.filter((p) => mine.has(p.id)).sort((a, b) => order.get(a.id) - order.get(b.id));
   const m = st.mode;
   if (!mp.length) {
@@ -1399,7 +1425,7 @@ function renderMine() {
     return;
   }
   const zAll = last.now.z;
-  $("mineList").innerHTML = mp.map((p) => `<li><span><span class="pickno">${pickLabel(order.get(p.id))}</span> ${esc(p.name)}</span><span class="meta">${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</span></li>`).join("");
+  $("mineList").innerHTML = mp.map((p) => `<li><span><span class="pickno">${DRAFT.labels.get(p.id) || ""}</span> ${esc(p.name)}</span><span class="meta">${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</span></li>`).join("");
   if (st.fmt === "pts") {
     const total = mp.reduce((a, p) => a + p.F[m], 0);
     $("mineBars").innerHTML = `<p class="hint">סה״כ נקודות פנטזי למשחק: <b style="font-family:var(--font-num);color:var(--ink)">${fmt1(total)}</b></p>`;
@@ -1686,7 +1712,7 @@ document.addEventListener("click", (e) => {
     if (t.dataset.a === "fav") { fav.has(id) ? fav.delete(id) : fav.add(id); }
     else {
       const i = picks.findIndex((x) => x.id === id), me = myIdx();
-      const onClock = slotOf(picks.length + 1) - 1;
+      const onClock = DRAFT.onClock;
       if (t.dataset.a === "mine") {
         if (i >= 0 && picks[i].team === me) picks.splice(i, 1);  // clicking again removes it
         else if (i >= 0) picks[i] = { id, team: me };              // switching keeps its place in the order
