@@ -575,6 +575,7 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
             <select id="pickTeam" aria-label="הקבוצה שבוחרת"></select>
             <button class="pickbtn" id="pickBtn" type="button">בחר</button>
             <button class="danger" id="undoBtn" type="button" >↶ ביטול הבחירה האחרונה</button>
+            <button class="danger" id="draftResetBtn" type="button" data-label="איפוס דראפט">איפוס דראפט</button>
           </div>
           <div class="pickrow2">
             <div class="pickfrom" id="quickPicks">
@@ -1901,16 +1902,18 @@ document.addEventListener("keydown", (e) => {
 });
 
 let resetTimer = null;
-$("resetBtn").addEventListener("click", (e) => {
-  const b = e.currentTarget;
+// Both reset buttons (side panel and draft room) ask for a second click, then clear every draft pick
+for (const id of ["resetBtn", "draftResetBtn"]) $(id).addEventListener("click", (e) => {
+  const b = e.currentTarget, label = b.dataset.label || "איפוס הדראפט";
   if (!b.classList.contains("armed")) {
     b.classList.add("armed"); b.textContent = "לחץ שוב כדי למחוק את כל הבחירות";
-    resetTimer = setTimeout(() => { b.classList.remove("armed"); b.textContent = "איפוס הדראפט"; }, 4000);
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(() => { b.classList.remove("armed"); b.textContent = label; }, 4000);
     return;
   }
   clearTimeout(resetTimer);
-  b.classList.remove("armed"); b.textContent = "איפוס הדראפט";
-  picks = []; rebuildSets(); render(); flushPicks();
+  b.classList.remove("armed"); b.textContent = label;
+  picks = []; editCell = null; rebuildSets(); render(); flushPicks();
 });
 
 // ---------- sort menu ----------
