@@ -13,14 +13,13 @@ Each run re-downloads the whole season so far, so a missed day fills itself in a
 is ever counted twice. Source: stats.nba.com (the same official feed as the rest of the project).
 """
 
-import json
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 from nba_api.stats.endpoints import playergamelogs
 
+from injuries import pull_injuries
 from nba_stats_2025_26 import fetch
 
 HERE = Path(__file__).parent
@@ -39,33 +38,6 @@ def pull(season_type: str) -> pd.DataFrame:
     df = df[KEEP].copy()
     df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"]).dt.date
     return df.sort_values(["GAME_DATE", "GAME_ID", "TEAM_ABBREVIATION", "PLAYER_NAME"])
-
-
-def pull_injuries() -> str:
-    """ESPN's injury list: status, fantasy status (OUT / OFS / GTD), injury and expected return.
-    A failure keeps yesterday's file, so the dashboard never loses its injury badges."""
-    url = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/injuries"
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        data = json.load(urllib.request.urlopen(req, timeout=60))
-    except Exception as e:  # noqa: BLE001
-        return f"Injuries: pull failed ({e}), kept the previous list"
-    rows = []
-    for team in data.get("injuries", []):
-        for i in team.get("injuries", []):
-            d = i.get("details") or {}
-            rows.append({
-                "PLAYER_NAME": i["athlete"]["displayName"],
-                "TEAM": team.get("displayName"),
-                "STATUS": i.get("status"),
-                "FANTASY_STATUS": (d.get("fantasyStatus") or {}).get("abbreviation"),
-                "INJURY": " ".join(x for x in [d.get("type"), d.get("detail")] if x and x != "Not Specified"),
-                "RETURN_DATE": d.get("returnDate"),
-                "COMMENT": i.get("shortComment"),
-                "UPDATED": i.get("date"),
-            })
-    pd.DataFrame(rows).to_csv(OUT / "injuries.csv", index=False, encoding="utf-8-sig")
-    return f"Injuries: {len(rows)} players listed"
 
 
 def main() -> None:

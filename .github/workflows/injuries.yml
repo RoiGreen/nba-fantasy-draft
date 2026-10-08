@@ -1,0 +1,46 @@
+# Refreshes the injury badges from ESPN's injury list during the day and republishes the site.
+# Game logs come from stats.nba.com, which blocks GitHub's servers, so those stay on the daily
+# run on Roi's computer (run_daily.ps1, 09:00). Times are UTC: 16:00 / 19:00 / 23:00 =
+# 18:00 / 21:00 / 01:00 Israel winter time (19:00 / 22:00 / 02:00 until the clocks change on Oct 25).
+name: Injury update
+
+on:
+  schedule:
+    - cron: "0 16 * * *"
+    - cron: "0 19 * * *"
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/injuries.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: site-update
+  cancel-in-progress: false
+
+jobs:
+  injuries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas numpy
+      - name: Pull injuries and rebuild
+        run: |
+          python injuries.py
+          python build_dashboard.py
+      - name: Publish
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add nba_2026_27 docs draft_dashboard.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Injury update"
+          git pull --rebase --autostash
+          git push

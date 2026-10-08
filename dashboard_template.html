@@ -259,6 +259,7 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
       </div>
       <span class="viewer" id="viewer" hidden><img id="viewerAvatar" alt="" hidden><span id="viewerName"></span><button class="signout" id="signOutBtn" type="button" hidden>התנתקות</button></span>
       <span class="save-state" id="saveState">הבחירות נשמרות בדפדפן הזה</span>
+      <span class="save-state" id="injStamp" hidden></span>
     </div>
   </header>
 
@@ -1501,6 +1502,13 @@ for (const id of ["hideTaken", "onlyMoved", "onlyFav"]) $(id).addEventListener("
 
 // Clicking into a number field selects its value, so typing replaces it
 document.addEventListener("focusin", (e) => { if (e.target.matches('input[type="number"]')) e.target.select(); });
+
+// When the injury list was last pulled, so viewers know how fresh the badges are
+if (D.injUpdated) {
+  const when = new Date(D.injUpdated);
+  $("injStamp").textContent = `פציעות עודכנו: ${when.toLocaleString("he-IL", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+  $("injStamp").hidden = false;
+}
 
 syncControls(); compute(); render();
 if (SITE) connectSite(); else connectStore();

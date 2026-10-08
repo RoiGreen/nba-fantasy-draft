@@ -45,7 +45,8 @@ SEASON_TAG = {2023: "_2023_24", 2024: "_2024_25", 2025: ""}  # 2025-26 files car
 # 2026-27 preseason, built from the daily game logs (daily_update.py); offered as its own season
 PRESEASON = 2026
 PRESEASON_LOGS = HERE / "nba_2026_27" / "game_logs_preseason.csv"
-INJURIES_CSV = HERE / "nba_2026_27" / "injuries.csv"  # ESPN injury list, from daily_update.py
+INJURIES_CSV = HERE / "nba_2026_27" / "injuries.csv"  # ESPN injury list, from injuries.py
+INJURIES_STAMP = HERE / "nba_2026_27" / "injuries_updated.txt"
 SEASONS = AVAIL_SEASONS + [PRESEASON]
 SEASON_FILES = HERE / "nba_2025_26" / "rookies"
 
@@ -257,7 +258,9 @@ def main() -> None:
     for p in players:
         p["avail"] = avail.get(p["id"], [None] * len(AVAIL_SEASONS))
 
-    payload = json.dumps({"stats": STATS, "seasons": SEASONS, "preseason": PRESEASON, "players": players, "teamSeasons": team_seasons},
+    inj_updated = INJURIES_STAMP.read_text(encoding="utf-8").strip() if INJURIES_STAMP.exists() else None
+    payload = json.dumps({"stats": STATS, "seasons": SEASONS, "preseason": PRESEASON, "players": players,
+                          "teamSeasons": team_seasons, "injUpdated": inj_updated},
                          ensure_ascii=False, separators=(",", ":"))
     html = html.replace("/*__DATA__*/null", payload)
     OUT.write_text(html, encoding="utf-8")
