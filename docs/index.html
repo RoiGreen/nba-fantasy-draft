@@ -275,7 +275,9 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .quick .qtaken { padding: 3px 10px; border-radius: 999px; background: var(--sunk); text-decoration: line-through; }
 table.dboard th, table.dboard td { font-family: var(--font-body); font-size: .82rem; white-space: nowrap; }
 table.dboard th.me, table.dboard td.me { background: color-mix(in srgb, var(--mine) 12%, transparent); }
-table.dboard td .pk { color: var(--muted); font-family: var(--font-num); margin-inline-end: 4px; }
+table.dboard .dcell { display: inline-flex; align-items: baseline; gap: 10px; }
+table.dboard td .pk { color: var(--accent); font-family: var(--font-num); font-weight: 700; font-variant-numeric: tabular-nums; }
+table.dboard td .dn { font-weight: 700; }
 table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-top: 2px solid var(--line); }
 .toast { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); inset-inline: 0; margin: 0 auto; width: fit-content; max-width: 90%;
   z-index: 60; background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-weight: 600; direction: rtl; }
@@ -1379,7 +1381,7 @@ function renderDraft() {
   $("dbBody").innerHTML = Array.from({ length: rounds }, (_, r) => `<tr><td class="rank">${r + 1}</td>` + byTeam.map((t, i) => {
     const x = t[r];
     const pl = x && byId.get(x.id);
-    return `<td class="${i === me ? "me" : ""}">${pl ? `<span class="pk">${pickLabel(x.no)}</span>${esc(pl.name)}` : ""}</td>`;
+    return `<td class="${i === me ? "me" : ""}">${pl ? `<span class="dcell"><span class="pk">${pickLabel(x.no)}</span><span class="dn">${esc(pl.name)}</span></span>` : ""}</td>`;
   }).join("") + `</tr>`).join("");
   const zAll = last.now.z, m = st.mode;
   const value = (id) => { const pl = byId.get(id); if (!pl) return 0; return st.fmt === "cat" ? (zAll.get(id)?.total ?? 0) : (pl.F?.[m] ?? 0); };
