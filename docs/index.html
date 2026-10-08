@@ -1654,8 +1654,8 @@ function cmpPool(side) {
 function cmpTotals(list) {
   const m = st.mode, o = { n: list.length };
   for (const k of ["PTS", "REB", "AST", "STL", "BLK", "FG3M", "TOV", "FGM", "FGA", "FTM", "FTA"]) o[k] = list.reduce((a, p) => a + p.L[m][k], 0);
-  o.FG_PCT = o.FGA ? o.FGM / o.FGA : 0;
-  o.FT_PCT = o.FTA ? o.FTM / o.FTA : 0;
+  o.FG_PCT = o.FGA ? o.FGM / o.FGA : list.length ? 0 : null;  // nobody on a side: no percentage to show
+  o.FT_PCT = o.FTA ? o.FTM / o.FTA : list.length ? 0 : null;
   const zs = list.map(zOf);
   o.z = Object.fromEntries(CATS.map((c) => [c.k, zs.reduce((a, r) => a + (r ? r.z[c.k] : 0), 0)]));
   o.Z = CATS.filter((c) => !st.punts.has(c.k)).reduce((a, c) => a + o.z[c.k], 0);
@@ -1836,12 +1836,14 @@ function renderCmp() {
   renderCmpSide("a"); renderCmpSide("b");
   const LA = cmpPlayers("a"), LB = cmpPlayers("b");
   const out = $("cmpOut");
-  if (!LA.length || !LB.length) {
+  // A pickup can be only an add (or only a drop): the other side is then "nothing"
+  const oneSided = c.mode === "pickup" && (LA.length || LB.length);
+  if ((!LA.length || !LB.length) && !oneSided) {
     out.innerHTML = "";
     return;
   }
   const A = cmpTotals(LA), B = cmpTotals(LB);
-  const name = (side, L) => M.team ? teamName(side === "a" ? c.ta : c.tb) : L.length === 1 ? L[0].name : M[side];
+  const name = (side, L) => M.team ? teamName(side === "a" ? c.ta : c.tb) : !L.length ? "ללא" : L.length === 1 ? L[0].name : M[side];
   const nA = name("a", LA), nB = name("b", LB);
   const per = st.mode === "g" ? "למשחק" : "ל־36 דקות";
   const several = LA.length > 1 || LB.length > 1;
