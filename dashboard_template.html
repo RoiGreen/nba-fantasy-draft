@@ -1734,7 +1734,7 @@ function renderCmp() {
     </div>
     <div class="cmpkey"><span><i style="background:var(--accent)"></i>${esc(nA)}</span><span><i style="background:var(--mine)"></i>${esc(nB)}</span></div>
     <section class="cmpsec">
-      <h3>נתונים כלליים <small>התפוקה ב־9 הקטגוריות, ${per}${several ? ", סכום השחקנים" : ""}</small>
+      <h3>נתונים כלליים
         <span class="cmpbar-toggle" role="group" aria-label="תצוגת הגרף">
           <button type="button" data-cmpchart="val" aria-pressed="${chart === "val"}">ערכים</button>
           <button type="button" data-cmpchart="z" aria-pressed="${chart === "z"}">Z</button>
@@ -1745,7 +1745,7 @@ function renderCmp() {
       </div>
     </section>
     <section class="cmpsec">
-      <h3>נתונים מתקדמים <small>תפקיד, קצב ויעילות${several ? " (ממוצע משוקלל לפי דקות; MIN = סך הדקות)" : ""}</small></h3>
+      <h3>נתונים מתקדמים</h3>
       <div class="cmpgrid">
         <div class="tbl-wrap short">${adv.html}</div>
         ${cmpBars(advRows, A, B, "val")}
