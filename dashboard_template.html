@@ -189,6 +189,12 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .multi .chips { padding: 8px; }
 .multi .linkbtn { border: 0; background: none; color: var(--muted); font: inherit; font-size: .85rem; cursor: pointer; text-decoration: underline; padding: 0 10px 8px; }
 
+.catfilters { display: grid; gap: 6px; }
+.cfrow { display: grid; grid-template-columns: minmax(0, 1fr) 5.5em auto; gap: 6px; align-items: center; }
+.cfbtns { display: inline-flex; gap: 4px; }
+.cfbtn { width: 30px; height: 34px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; font-size: 1.1rem; border-radius: 8px; cursor: pointer; }
+.cfbtn:hover { border-color: var(--accent); color: var(--accent); }
+
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
 .tabs button { border: 0; background: transparent; font: inherit; font-weight: 700; font-size: 1rem; color: var(--muted); padding: 8px 14px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
 .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
@@ -310,22 +316,9 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
           <input type="range" id="minMin" min="0" max="36" value="0">
         </div>
         <div class="field">
-          <label for="minCatVal" id="minCatLabel">מינימום לפי קטגוריה</label>
-          <div class="sortrow">
-            <select id="minCat" aria-label="קטגוריה לסינון">
-              <option value="PTS">נקודות (PTS)</option>
-              <option value="REB">ריבאונדים (REB)</option>
-              <option value="AST">אסיסטים (AST)</option>
-              <option value="STL">חטיפות (STL)</option>
-              <option value="BLK">חסימות (BLK)</option>
-              <option value="FG3M">שלשות (3PM)</option>
-              <option value="FG_PCT">FG% (באחוזים)</option>
-              <option value="FT_PCT">FT% (באחוזים)</option>
-              <option value="TOV">איבודים (TOV) – מקסימום</option>
-            </select>
-            <input type="number" id="minCatVal" min="0" step="0.1" value="0" style="width:5.5em">
-          </div>
-          <p class="hint" id="minCatHint">ריק או 0 = בלי סינון. הערכים לפי מצב התצוגה (אמיתי או 36 דקות).</p>
+          <span class="lbl">מינימום לפי קטגוריה</span>
+          <div class="catfilters" id="catFilters"></div>
+          <p class="hint" id="minCatHint">ריק או 0 = בלי סינון. + מוסיף סינון על קטגוריה נוספת, וכל הסינונים חלים יחד. הערכים לפי מצב התצוגה (אמיתי או 36 דקות).</p>
         </div>
         <div class="field">
           <span class="lbl">עמדה</span>
@@ -516,7 +509,7 @@ function applySeasons() {
 // ---------- state ----------
 const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 2,
-  q: "", minGp: 50, minMin: 0, minCat: "PTS", minVal: 0, pos: new Set(), teamSel: [], maxAge: 42,
+  q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
   sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [0, 1, 2],
 };
@@ -542,6 +535,8 @@ function applySettings(s) {
   if (!Array.isArray(s.roles)) s.roles = s.role ? [s.role] : [];
   if (!Array.isArray(s.teamSel)) s.teamSel = s.team ? [s.team] : [];
   if (s.minAst && !s.minVal) { s.minCat = "AST"; s.minVal = s.minAst; }
+  if (!Array.isArray(s.catFilters)) s.catFilters = [{ cat: s.minCat || "PTS", val: s.minVal || 0 }];
+  delete s.minCat; delete s.minVal;
   delete s.minAst;
   if ((s.settingsVersion || 1) < 2) { s.teams = 8; s.settingsVersion = 2; }
   if (["rankAlt", "gap", "trend", "vers", "weak"].includes(s.sort)) { s.sort = "rank"; s.asc = true; }
@@ -797,12 +792,41 @@ const posTd = (pr, p) => pr ? `<td class="rank" style="color:var(--mine)">${pr.r
 // Threshold on one category, typed by the user: a minimum, or a maximum for turnovers.
 // Percentages are typed as percents (45 = 45%). Values follow the current view (per game or per 36).
 function catOk(p) {
-  const v = Number(st.minVal) || 0;
-  if (!v) return true;
   const o = p.L[st.mode];
-  if (st.minCat === "TOV") return o.TOV <= v;
-  const x = st.minCat.endsWith("_PCT") ? o[st.minCat] * 100 : o[st.minCat];
-  return x >= v;
+  return st.catFilters.every((f) => {
+    const v = Number(f.val) || 0;
+    if (!v) return true;
+    if (f.cat === "TOV") return o.TOV <= v;
+    const x = f.cat.endsWith("_PCT") ? o[f.cat] * 100 : o[f.cat];
+    return x >= v;
+  });
+}
+
+const CAT_OPTS = [["PTS", "נקודות (PTS)"], ["REB", "ריבאונדים (REB)"], ["AST", "אסיסטים (AST)"], ["STL", "חטיפות (STL)"],
+  ["BLK", "חסימות (BLK)"], ["FG3M", "שלשות (3PM)"], ["FG_PCT", "FG% (באחוזים)"], ["FT_PCT", "FT% (באחוזים)"],
+  ["TOV", "איבודים (TOV) – מקסימום"]];
+function catRowHtml(f, i) {
+  return `<div class="cfrow">
+    <select data-cfi="${i}" aria-label="קטגוריה לסינון">${CAT_OPTS.map(([k, l]) => `<option value="${k}"${k === f.cat ? " selected" : ""}>${l}</option>`).join("")}</select>
+    <input type="number" data-cfv="${i}" min="0" step="0.1" value="${f.val || 0}" aria-label="ערך הסף">
+    <span class="cfbtns">
+      <button type="button" class="cfbtn" data-cfadd="${i}" aria-label="הוספת סינון על קטגוריה נוספת" title="הוספת קטגוריה">+</button>
+      ${st.catFilters.length > 1 ? `<button type="button" class="cfbtn" data-cfdel="${i}" aria-label="הסרת הסינון הזה" title="הסרה">−</button>` : ""}
+    </span>
+  </div>`;
+}
+// Rebuild the rows only when their number changes, so a field being typed in keeps its focus
+function syncCatFilters(force) {
+  const box = $("catFilters");
+  if (force || box.querySelectorAll(".cfrow").length !== st.catFilters.length) {
+    box.innerHTML = st.catFilters.map(catRowHtml).join("");
+    return;
+  }
+  st.catFilters.forEach((f, i) => {
+    const sel = box.querySelector(`[data-cfi="${i}"]`), inp = box.querySelector(`[data-cfv="${i}"]`);
+    if (sel && sel !== document.activeElement) sel.value = f.cat;
+    if (inp && inp !== document.activeElement) inp.value = f.val || 0;
+  });
 }
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
@@ -1241,9 +1265,7 @@ function syncControls() {
   setField("teams", st.teams); setField("roster", st.roster); setField("q", st.q);
   $("minGp").value = st.minGp; $("minGpOut").textContent = st.minGp;
   $("minMin").value = st.minMin; $("minMinOut").textContent = st.minMin;
-  $("minCat").value = st.minCat;
-  setField("minCatVal", st.minVal || 0);
-  $("minCatLabel").textContent = st.minCat === "TOV" ? "מקסימום לפי קטגוריה" : "מינימום לפי קטגוריה";
+  syncCatFilters();
   setField("maxAge", st.maxAge);
   for (const b of document.querySelectorAll("[data-teamsel]")) b.setAttribute("aria-pressed", st.teamSel.includes(b.dataset.teamsel));
   $("teamSummary").textContent = !st.teamSel.length ? "כל הקבוצות"
@@ -1406,8 +1428,33 @@ const num = (id, key, lo, hi, re = true) => $(id).addEventListener("input", (e) 
 num("teams", "teams", 4, 30); num("roster", "roster", 5, 20);
 num("minGp", "minGp", 10, 82); num("minMin", "minMin", 0, 36);
 num("maxAge", "maxAge", 19, 42, false);
-$("minCat").addEventListener("change", (e) => { st.minCat = e.target.value; update(false); });
-$("minCatVal").addEventListener("input", (e) => { const v = Number(e.target.value); st.minVal = Number.isFinite(v) && v > 0 ? v : 0; update(false); });
+$("catFilters").addEventListener("change", (e) => {
+  const i = e.target.dataset.cfi;
+  if (i == null) return;
+  st.catFilters[Number(i)].cat = e.target.value;
+  update(false);
+});
+$("catFilters").addEventListener("input", (e) => {
+  const i = e.target.dataset.cfv;
+  if (i == null) return;
+  const v = Number(e.target.value);
+  st.catFilters[Number(i)].val = Number.isFinite(v) && v > 0 ? v : 0;
+  update(false);
+});
+$("catFilters").addEventListener("click", (e) => {
+  const add = e.target.closest("[data-cfadd]"), del = e.target.closest("[data-cfdel]");
+  if (add) {
+    const used = new Set(st.catFilters.map((f) => f.cat));
+    const next = (CAT_OPTS.find(([k]) => !used.has(k)) || CAT_OPTS[0])[0];
+    st.catFilters.splice(Number(add.dataset.cfadd) + 1, 0, { cat: next, val: 0 });
+  } else if (del) {
+    st.catFilters.splice(Number(del.dataset.cfdel), 1);
+    if (!st.catFilters.length) st.catFilters = [{ cat: "PTS", val: 0 }];
+  } else return;
+  e.stopPropagation();
+  syncCatFilters(true);
+  update(false);
+});
 num("myPos", "myPos", 1, 30, false);
 $("snake").addEventListener("change", (e) => { st.snake = e.target.checked; update(false); });
 $("undoBtn").addEventListener("click", () => {
@@ -1418,7 +1465,7 @@ $("q").addEventListener("input", (e) => { st.q = e.target.value; update(false); 
 for (const id of ["hideTaken", "onlyMoved", "onlyFav"]) $(id).addEventListener("change", (e) => { st[id] = e.target.checked; update(false); });
 
 // Clicking into a number field selects its value, so typing replaces it
-for (const el of document.querySelectorAll('input[type="number"]')) el.addEventListener("focus", () => el.select());
+document.addEventListener("focusin", (e) => { if (e.target.matches('input[type="number"]')) e.target.select(); });
 
 syncControls(); compute(); render();
 if (SITE) connectSite(); else connectStore();
