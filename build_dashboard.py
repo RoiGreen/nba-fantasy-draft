@@ -308,9 +308,14 @@ def main() -> None:
         p["avail"] = avail.get(p["id"], [None] * len(AVAIL_SEASONS))
 
     inj_updated = INJURIES_STAMP.read_text(encoding="utf-8").strip() if INJURIES_STAMP.exists() else None
+    # 2026-27 schedule for the weekly games line: [UTC tip-off, home, away, preseason?]
+    sched_df = pd.read_csv(DATA / "schedule_2026_27.csv", low_memory=False,
+                           usecols=["gameId", "gameDateTimeUTC", "homeTeam_teamTricode", "awayTeam_teamTricode"])
+    sched = [[r.gameDateTimeUTC, r.homeTeam_teamTricode, r.awayTeam_teamTricode, int(str(r.gameId).zfill(10)[2] == "1")]
+             for r in sched_df.itertuples() if isinstance(r.homeTeam_teamTricode, str)]
     payload = json.dumps({"stats": STATS, "seasons": seasons, "preseason": PRESEASON, "current": CURRENT,
                           "curMaxGp": cur_max_gp, "players": players,
-                          "teamSeasons": team_seasons, "injUpdated": inj_updated, "vsGames": VS_GAMES},
+                          "teamSeasons": team_seasons, "injUpdated": inj_updated, "vsGames": VS_GAMES, "sched": sched},
                          ensure_ascii=False, separators=(",", ":"))
     html = html.replace("/*__DATA__*/null", payload)
     OUT.write_text(html, encoding="utf-8")

@@ -113,6 +113,10 @@ td { font-family: var(--font-num); font-size: 1rem; }
 td.name { text-align: start; font-family: var(--font-body); font-size: .95rem; }
 td.name .n { font-weight: 700; }
 td.name .nc { display: flex; align-items: center; gap: 8px; }
+td.name .nmeta { display: grid; gap: 1px; min-width: 0; }
+td.name .nline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+td.name .sched { font-size: .78rem; color: var(--muted); }
+td.name .sched b { color: var(--ink); font-weight: 600; }
 td.name .avatar { width: 30px; height: 30px; border-radius: 50%; flex: none; background: var(--sunk); object-fit: cover; }
 td.name .t { display: inline-flex; align-items: center; gap: 6px; direction: ltr; unicode-bidi: isolate; color: var(--muted); font-size: .8rem; font-family: var(--font-num); letter-spacing: .03em; }
 td.name .moved { color: var(--accent); font-weight: 700; font-size: .9rem; }
@@ -710,7 +714,7 @@ const COLS = [
 
 let last = null;
 function compute() {
-  applySeasons(); computeTeams(); computeDist();
+  applySeasons(); computeTeams(); computeDist(); computeWeek();
   const list = players.filter((p) => p.has && p.L.g.MIN >= st.minMin);
   last = { list, now: rankAll(list, st.mode) };
 }
@@ -832,7 +836,7 @@ function nameCell(p) {
     : `${rk}${inj}${esc(p.team26)}`;
   const n = picks.findIndex((x) => x.id === p.id);
   const chip = n >= 0 ? `<span class="pickchip" title="בחירה ${n + 1} בדראפט">${pickLabel(n + 1)}</span>` : "";
-  return `<td class="name"><div class="nc">${p.img ? `<img class="avatar" src="${p.img}" alt="" loading="lazy">` : `<span class="avatar"></span>`}<span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span>${injuryPill(p)}</div></td>`;
+  return `<td class="name"><div class="nc">${p.img ? `<img class="avatar" src="${p.img}" alt="" loading="lazy">` : `<span class="avatar"></span>`}<div class="nmeta"><div class="nline"><span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span>${injuryPill(p)}</div>${scheduleLine(p)}</div></div></td>`;
 }
 
 // Availability: share of the 82 games played over the last three seasons he was in the league
@@ -930,6 +934,36 @@ function injuryPill(p) {
   const ret = p.hurt.ret ? new Date(p.hurt.ret).toLocaleDateString("he-IL") : null;
   const title = [p.hurt.inj, ret ? `חזרה משוערת: ${ret}` : null, p.hurt.note].filter(Boolean).join(" · ");
   return `<span class="injpill ${look.cls}" title="${esc(title)}">${look.text}</span>`;
+}
+
+// ---------- this fantasy week's games (Monday to Sunday, NBA game days in US Eastern time) ----------
+const etDay = (d) => d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });  // YYYY-MM-DD
+const GAMES = (D.sched || []).map(([utc, h, a, pre]) => { const t = new Date(utc); return { t, h, a, pre, d: etDay(t) }; });
+let TEAM_WEEK = new Map();
+function computeWeek() {
+  const now = Date.now(), today = etDay(new Date());
+  const noon = new Date(`${today}T12:00:00Z`);
+  const monday = new Date(noon.getTime() - ((noon.getUTCDay() + 6) % 7) * 864e5);
+  const from = monday.toISOString().slice(0, 10), to = new Date(monday.getTime() + 6 * 864e5).toISOString().slice(0, 10);
+  TEAM_WEEK = new Map();
+  for (const g of GAMES) {
+    if (g.d < from || g.d > to) continue;
+    for (const [team, opp, home] of [[g.h, g.a, true], [g.a, g.h, false]]) {
+      const e = TEAM_WEEK.get(team) || { total: 0, played: 0, today: null };
+      e.total++;
+      if (g.t.getTime() + 2.5 * 3600e3 < now) e.played++;  // a game is over ~2.5 hours after tip-off
+      if (g.d === today) e.today = { opp, home, t: g.t, pre: g.pre };
+      TEAM_WEEK.set(team, e);
+    }
+  }
+}
+function scheduleLine(p) {
+  if (!p.team26) return "";
+  const e = TEAM_WEEK.get(p.team26) || { total: 0, played: 0, today: null };
+  const when = e.today
+    ? `<b>${e.today.home ? "נגד" : "אצל"} ${esc(e.today.opp)}</b> | ${e.today.t.toLocaleString("he-IL", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" })}${e.today.pre ? " (הכנה)" : ""}`
+    : "אין משחק היום";
+  return `<span class="sched" title="משחקים השבוע (שני עד ראשון): ${e.played} שוחקו מתוך ${e.total}">${when} (${e.played}/${e.total})</span>`;
 }
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
