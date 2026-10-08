@@ -224,6 +224,8 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .pickbar input { flex: 1 1 220px; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .pickbar select { font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .pickbtn { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 8px 18px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.pickfrom { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+.pickfrom select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); width: 100%; }
 .rollers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
 .roller { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
 .roller h3 { margin: 0; padding: 8px 12px; font-size: .9rem; border-bottom: 1px solid var(--line); }
@@ -523,9 +525,9 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
           <button class="pickbtn" id="pickBtn" type="button">בחר</button>
           <button class="danger" id="undoBtn" type="button">ביטול הבחירה האחרונה</button>
         </div>
-        <div class="rollers" id="quickPicks">
-          <div class="roller"><h3>★ המועדפים שלי</h3><ol id="favRoll"></ol></div>
-          <div class="roller"><h3>לפי דירוג</h3><ol id="rankRoll"></ol></div>
+        <div class="pickfrom" id="quickPicks">
+          <select id="favPick" aria-label="בחירה מהמועדפים שלי"></select>
+          <select id="rankPick" aria-label="בחירה לפי דירוג"></select>
         </div>
         <div class="tbl-wrap short">
           <table class="dboard">
@@ -1315,10 +1317,13 @@ function renderDraft() {
       ? `<li class="gone"><span class="rk">${r}</span>${name}<span class="by">${esc(teamName(pickedBy.get(p.id)))}</span></li>`
       : `<li><span class="rk">${r}</span>${name}<button type="button" data-qpick="${p.id}" title="בחירה לקבוצה שבתיבה">בחר</button></li>`;
   };
-  $("favRoll").innerHTML = favs.length ? favs.map(row).join("")
-    : `<li class="empty">עוד אין מועדפים. סמן ★ ליד שחקנים בטבלאות.</li>`;
-  $("rankRoll").innerHTML = avail.length ? avail.slice(0, 300).map(row).join("")
-    : `<li class="empty">אין שחקנים זמינים לפי הסינון הנוכחי.</li>`;
+  // Two dropdowns: picking a player fills the pick box, "בחר" confirms
+  const opt = (p) => `<option value="${p.id}">${rank.has(p.id) ? `#${rank.get(p.id)} ` : ""}${esc(p.name)} · ${esc(p.pos || "")} · ${esc(p.team26 || "")}</option>`;
+  const freeFavs = favs.filter((p) => !pickedBy.has(p.id) && rank.has(p.id));
+  if ($("favPick") !== document.activeElement)
+    $("favPick").innerHTML = `<option value="">★ המועדפים שלי (${freeFavs.length} זמינים)</option>` + freeFavs.map(opt).join("");
+  if ($("rankPick") !== document.activeElement)
+    $("rankPick").innerHTML = `<option value="">לפי דירוג (${avail.length} זמינים)</option>` + avail.slice(0, 300).map(opt).join("");
 
   // Board: a column per team, each team's picks in the order it made them
   const byTeam = Array.from({ length: n }, () => []);
@@ -1781,9 +1786,13 @@ $("pickBtn").addEventListener("click", () => {
   $("pickInput").value = "";
 });
 $("pickInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("pickBtn").click(); } });
-$("quickPicks").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-qpick]");
-  if (b) makePick(Number(b.dataset.qpick), Number($("pickTeam").value));
+$("quickPicks").addEventListener("change", (e) => {
+  const id = Number(e.target.value);
+  if (!id) return;
+  const pl = players.find((p) => p.id === id);
+  const value = [...PICK_LOOKUP].find(([, v]) => v === id)?.[0];
+  if (pl && value) { $("pickInput").value = value; $("pickBtn").focus(); }
+  e.target.value = "";
 });
 $("snake").addEventListener("change", (e) => { st.snake = e.target.checked; update(false); });
 $("undoBtn").addEventListener("click", () => {
