@@ -302,7 +302,7 @@ table.dboard td[data-cell]:hover { outline: 1px dashed var(--accent); outline-of
 table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px; }
 .cmpmodes { max-width: 640px; }
 .cmpsides { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: start; }
-@media (max-width: 700px) { .cmpsides { grid-template-columns: minmax(0, 1fr); } .cmpswap { justify-self: center; } }
+@media (max-width: 700px) { .cmpsides { grid-template-columns: minmax(0, 1fr); } }
 .cmpside { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 10px; display: grid; gap: 8px; border-top: 4px solid var(--ca); }
 .cmpside.sa { --ca: var(--accent); } .cmpside.sb { --ca: var(--mine); }
 .cmpside h3 { margin: 0; font-size: .95rem; color: var(--ca); }
@@ -311,7 +311,9 @@ table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px
 .cmppick input { flex: 1; min-width: 0; font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .cmppick button, .cmpswap, .cmpbar-toggle button { font: inherit; font-weight: 600; font-size: .85rem; padding: 6px 12px; border-radius: 8px;
   border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
-.cmpswap { align-self: center; font-size: 1.1rem; }
+.cmpswap { font-size: 1.1rem; }
+.cmpmid { align-self: center; display: grid; gap: 8px; }
+@media (max-width: 700px) { .cmpmid { grid-auto-flow: column; justify-self: center; } }
 .cmpchips { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .cmpchips li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: .88rem; padding: 4px 6px; border-radius: 6px; background: var(--sunk); }
 .cmpchips .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -703,7 +705,10 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
             <ul class="cmpchips" id="cmpChipsA"></ul>
             <div class="cmpdelta" id="cmpDeltaA" hidden></div>
           </div>
-          <button type="button" class="cmpswap" id="cmpSwap" title="החלפת הצדדים" aria-label="החלפת הצדדים">⇄</button>
+          <div class="cmpmid">
+            <button type="button" class="cmpswap" id="cmpReset" title="איפוס שני הצדדים כדי לבחור מחדש" aria-label="איפוס הבחירה">↺</button>
+            <button type="button" class="cmpswap" id="cmpSwap" title="החלפת הצדדים" aria-label="החלפת הצדדים">⇄</button>
+          </div>
           <div class="cmpside sb" id="cmpSideB">
             <h3 id="cmpHB"></h3>
             <div class="cmppick" id="cmpPickB"></div>
@@ -1911,6 +1916,12 @@ $("viewCmp").addEventListener("click", (e) => {
   else if (t.id === "cmpSwap") {
     [c.a, c.b] = [c.b, c.a]; [c.ta, c.tb] = [c.tb, c.ta];
     c.sw = { a: c.sw.b, b: c.sw.a }; c.fold = { a: c.fold.b, b: c.fold.a };
+  }
+  else if (t.id === "cmpReset") {
+    // Start over: empty both sides, back to my team vs the next one, no edits
+    const n = Math.max(st.teams, 1);
+    Object.assign(c, { a: [], b: [], tta: null, ttb: null, ta: myIdx(), tb: (myIdx() + 1) % n, sw: { a: [], b: [] }, fold: { a: false, b: false } });
+    cmpSwapping = null;
   }
   else if (t.dataset.cmpfold) c.fold[t.dataset.cmpfold] = !c.fold[t.dataset.cmpfold];
   else if (t.dataset.cmpsw) { const [side, id] = t.dataset.cmpsw.split(":"); cmpSwapping = { side, id: Number(id) }; return renderCmp(); }
