@@ -1644,6 +1644,8 @@ function syncControls() {
   $("snake").checked = st.snake;
   for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", b.dataset.tab === st.tab);
   $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv"; $("viewDraft").hidden = st.tab !== "draft";
+  // The table search does nothing in the draft room (it has its own pick box), so it is hidden there
+  document.querySelector(".topsearch").hidden = st.tab === "draft";
   $("onlyFav").checked = st.onlyFav;
   for (const b of document.querySelectorAll("[data-avs]")) b.setAttribute("aria-pressed", st.availSeasons.includes(Number(b.dataset.avs)));
   // Collapsed list shows the chosen seasons, newest first
