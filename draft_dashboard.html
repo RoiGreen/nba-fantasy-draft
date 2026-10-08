@@ -359,16 +359,10 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>חדר הדראפט <span class="yr">2026-27</span></h1>
+      <h1><span id="pageTitle">נתונים כלליים</span> <span class="yr">2026-27</span></h1>
       <p class="sub" id="subTitle">מבוסס על סטטיסטיקה רשמית של ה־NBA. הדירוג מחושב מחדש עם כל סינון.</p>
     </div>
     <div style="display:grid;gap:4px;justify-items:end">
-      <div class="board-count">
-        <span class="pill">זמינים <b id="cAvail">0</b></span>
-        <span class="pill">נבחרו <b id="cTaken">0</b></span>
-        <span class="pill mine">שלי <b id="cMine">0</b></span>
-        <span class="pill">מועדפים <b id="cFav">0</b></span>
-      </div>
       <span class="viewer" id="viewer" hidden><img id="viewerAvatar" alt="" hidden><span id="viewerName"></span><button class="signout" id="signOutBtn" type="button" hidden>התנתקות</button></span>
       <span class="save-state" id="saveState">הבחירות נשמרות בדפדפן הזה</span>
       <span class="save-state" id="injStamp" hidden></span>
@@ -958,10 +952,6 @@ function render() {
       <td class="acts">${actions(p)}</td></tr>`;
   }).join("") || EMPTY_ROW(COLS.length + (statRank ? 1 : 0));
 
-  // counts
-  const avail = list.filter((p) => !taken.has(p.id) && !mine.has(p.id)).length;
-  $("cAvail").textContent = avail; $("cTaken").textContent = taken.size; $("cMine").textContent = mine.size;
-  $("cFav").textContent = fav.size;
 
   renderMine(); renderFav(); renderAdv(); renderDraft(); renderDist();
 }
@@ -1798,6 +1788,8 @@ function syncControls() {
     : st.teamSel.length <= 4 ? st.teamSel.map((t) => t === "-" ? "FA" : t).join(", ") : `${st.teamSel.length} קבוצות נבחרו`;
   $("snake").checked = st.snake;
   for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", b.dataset.tab === st.tab);
+  // The page title follows the open tab
+  $("pageTitle").textContent = { board: "נתונים כלליים", adv: "נתונים מתקדמים", draft: "חדר הדראפט" }[st.tab] || "נתונים כלליים";
   $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv"; $("viewDraft").hidden = st.tab !== "draft";
   // The table search does nothing in the draft room (it has its own pick box), so it is hidden there
   document.querySelector(".topsearch").hidden = st.tab === "draft";
