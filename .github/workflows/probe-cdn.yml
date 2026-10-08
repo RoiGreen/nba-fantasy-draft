@@ -1,0 +1,21 @@
+# One-off check: can GitHub's servers read the NBA live data feed (cdn.nba.com)?
+name: Probe NBA CDN
+
+on:
+  push:
+    paths:
+      - .github/workflows/probe-cdn.yml
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Schedule feed
+        run: curl -sf -A "Mozilla/5.0" -H "Referer: https://www.nba.com/" -o /dev/null -w "%{http_code} %{size_download}\n" https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json
+      - name: Box score of a finished preseason game
+        run: |
+          curl -sf -A "Mozilla/5.0" -H "Referer: https://www.nba.com/" https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json \
+            | python3 -c "import sys,json; g=[g for d in json.load(sys.stdin)['leagueSchedule']['gameDates'] for g in d['games'] if g['gameStatus']==3]; print(g[-1]['gameId'])" > gid.txt
+          cat gid.txt
+          curl -sf -A "Mozilla/5.0" -H "Referer: https://www.nba.com/" -o /dev/null -w "%{http_code} %{size_download}\n" "https://cdn.nba.com/static/json/liveData/boxscore/boxscore_$(cat gid.txt).json"
