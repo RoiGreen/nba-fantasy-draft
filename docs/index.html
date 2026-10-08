@@ -599,8 +599,8 @@ function heat(z) {
 }
 
 const COLS = [
-  { k: "rank", l: "RANK", asc: true },
-  { k: "name", l: "שחקן", asc: true }, { k: "age", l: "גיל", asc: true }, { k: "gp", l: "GP", asc: false },
+  { k: "rank", l: "Rank", asc: true },
+  { k: "name", l: "Player Name", asc: true }, { k: "age", l: "גיל", asc: true }, { k: "gp", l: "GP", asc: false },
   { k: "avail", l: "זמינות", asc: false },
   { k: "MIN", l: "MIN", asc: false },
   ...CATS.map((c) => ({ k: c.k, l: c.l, asc: c.k === "TOV", cat: true })),
@@ -674,8 +674,8 @@ function render() {
   const posR = positionRank();
 
   // header
-  $("head").innerHTML = (statLabel ? `<th class="nosort" scope="col">${esc(statLabel)} RANK</th>` : "") + COLS.map((c) => {
-    const label = c.k === "rank" ? (m === "g" ? "RANK" : "RANK 36 MIN") : c.l;
+  $("head").innerHTML = (statLabel ? `<th class="nosort" scope="col">${esc(statLabel)} Rank</th>` : "") + COLS.map((c) => {
+    const label = c.k === "rank" ? (m === "g" ? "Rank" : "Rank 36 MIN") : c.l;
     const cls = [st.sort === c.k ? "sorted" : "", st.sort === c.k && st.asc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : "",
                  c.cat && st.fmt === "cat" && st.punts.has(c.k) ? "punted" : ""].join(" ");
     return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-k="${c.k}"`} scope="col">${esc(label)}</th>` + (c.k === "rank" ? posTh(posR) : "");
@@ -769,7 +769,7 @@ function positionRank() {
   return { pos, rank: new Map(order.map((p, i) => [p.id, i + 1])) };
 }
 const POS_NAMES = { G: "Guard", F: "Forward", C: "Center" };
-const posTh = (pr) => pr ? `<th class="nosort" scope="col">${POS_NAMES[pr.pos]} RANK</th>` : "";
+const posTh = (pr) => pr ? `<th class="nosort" scope="col">${POS_NAMES[pr.pos]} Rank</th>` : "";
 const posTd = (pr, p) => pr ? `<td class="rank" style="color:var(--mine)">${pr.rank.get(p.id) ?? "–"}</td>` : "";
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
@@ -844,7 +844,7 @@ function computeDist() {
   DIST_ROWS.sort((a, b) => b.key - a.key);
 }
 const ADV_COLS = [
-  { k: "rank", l: "#", asc: true }, { k: "name", l: "שחקן", asc: true },
+  { k: "rank", l: "#", asc: true }, { k: "name", l: "Player Name", asc: true },
   { k: "gp", l: "GP", asc: false }, { k: "min", l: "MIN", asc: false },
   { k: "USG", l: "USG%", asc: false }, { k: "PACE", l: "PACE", asc: false },
   { k: "ORTG", l: "ORTG", asc: false }, { k: "ASTTOV", l: "AST/TOV", asc: false },
@@ -901,7 +901,7 @@ function renderAdv() {
   }
 
   const posR = positionRank();
-  $("advHead").innerHTML = (statCol ? `<th class="nosort" scope="col">${esc(statCol.l)} RANK</th>` : "") + ADV_COLS.map((c) => {
+  $("advHead").innerHTML = (statCol ? `<th class="nosort" scope="col">${esc(statCol.l)} Rank</th>` : "") + ADV_COLS.map((c) => {
     const cls = [st.advSort === c.k ? "sorted" : "", st.advSort === c.k && st.advAsc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : ""].join(" ");
     return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.l)}</th>` + (c.k === "rank" ? posTh(posR) : "");
   }).join("");
@@ -927,7 +927,7 @@ function renderAdv() {
   const teams = [...TEAM_ROWS].sort((a, b) => (st.teamAsc ? 1 : -1) * sign(tcol) * (a[tcol.k] - b[tcol.k]));
   const th = Object.fromEntries(TCOLS.map((c) => [c.k, percentileHeat(teams.map((t) => sign(c) * t[c.k]))]));
   const teamRank = rankerFor(teams.map((t) => sign(tcol) * t[tcol.k]));
-  $("teamHead").innerHTML = `<th class="nosort" scope="col">${tcol.l} RANK</th><th class="nosort" scope="col">קבוצה</th>` +
+  $("teamHead").innerHTML = `<th class="nosort" scope="col">${tcol.l} Rank</th><th class="nosort" scope="col">קבוצה</th>` +
     TCOLS.map((c) => {
       const cls = [st.teamSort === c.k ? "sorted" : "", st.teamSort === c.k && st.teamAsc ? "asc" : ""].join(" ");
       return `<th class="${cls}" tabindex="0" data-tk="${c.k}" scope="col">${c.l}</th>`;
