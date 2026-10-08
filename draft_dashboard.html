@@ -1902,7 +1902,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 let resetTimer = null;
-// Both reset buttons (side panel and draft room) ask for a second click, then clear every draft pick
+// Both reset buttons (side panel and draft room) ask for a second click, then clear every pick and table mark
 for (const id of ["resetBtn", "draftResetBtn"]) $(id).addEventListener("click", (e) => {
   const b = e.currentTarget, label = b.dataset.label || "איפוס הדראפט";
   if (!b.classList.contains("armed")) {
@@ -1913,7 +1913,8 @@ for (const id of ["resetBtn", "draftResetBtn"]) $(id).addEventListener("click", 
   }
   clearTimeout(resetTimer);
   b.classList.remove("armed"); b.textContent = label;
-  picks = []; editCell = null; rebuildSets(); render(); flushPicks();
+  // A new draft: the "נלקח" / "שלי" marks from the table go too, so every player is available again (favorites stay)
+  picks = []; st.tags = {}; editCell = null; rebuildSets(); render(); saveSettings(); flushPicks();
 });
 
 // ---------- sort menu ----------
