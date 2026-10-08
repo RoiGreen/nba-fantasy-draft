@@ -200,7 +200,10 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .injpill.out { background: var(--neg); color: #fff; }
 .injpill.gtd { border: 1.5px solid var(--neg); color: var(--neg); background: transparent; }
 
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+/* The search box is as wide as the two tabs under it; the tab line still runs the full width */
+.tabhead { border-bottom: 1px solid var(--line); }
+.tabhead-inner { display: inline-grid; gap: 8px; max-width: 100%; }
+.tabs { display: flex; gap: 4px; }
 .tabs button { border: 0; background: transparent; font: inherit; font-weight: 700; font-size: 1rem; color: var(--muted); padding: 8px 14px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
 .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
 .view { display: grid; gap: 10px; min-width: 0; }
@@ -401,13 +404,17 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
     </aside>
 
     <main>
-      <div class="topsearch">
-        <label for="q" class="visually-hidden">חיפוש שחקן</label>
-        <input type="search" id="q" placeholder="חיפוש שחקן…" autocomplete="off">
-      </div>
-      <div class="tabs" role="tablist">
-        <button role="tab" id="tabBoard" data-tab="board" aria-selected="true" aria-controls="viewBoard">נתונים כלליים</button>
-        <button role="tab" id="tabAdv" data-tab="adv" aria-selected="false" aria-controls="viewAdv">נתונים מתקדמים</button>
+      <div class="tabhead">
+        <div class="tabhead-inner">
+          <div class="topsearch">
+            <label for="q" class="visually-hidden">חיפוש שחקן</label>
+            <input type="search" id="q" placeholder="חיפוש שחקן…" autocomplete="off">
+          </div>
+          <div class="tabs" role="tablist">
+            <button role="tab" id="tabBoard" data-tab="board" aria-selected="true" aria-controls="viewBoard">נתונים כלליים</button>
+            <button role="tab" id="tabAdv" data-tab="adv" aria-selected="false" aria-controls="viewAdv">נתונים מתקדמים</button>
+          </div>
+        </div>
       </div>
       <section class="view" id="viewBoard" role="tabpanel" aria-labelledby="tabBoard">
       <div class="legend">
