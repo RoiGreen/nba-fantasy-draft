@@ -187,6 +187,9 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .multi summary { cursor: pointer; padding: 7px 10px; font-weight: 600; list-style-position: inside; }
 .multi[open] summary { border-bottom: 1px solid var(--line); }
 .multi .chips { padding: 8px; }
+.lockmsg { margin: 0; padding: 6px 10px; border-radius: 8px; font-size: .85rem; font-weight: 600;
+  background: color-mix(in srgb, var(--neg) 14%, transparent); color: var(--neg); }
+.seasonlist.locked .chip { opacity: .45; cursor: not-allowed; }
 .seasonlist { display: grid; gap: 6px; padding: 8px; max-height: 180px; overflow-y: auto; }
 .seasonlist .chip { justify-self: stretch; text-align: start; }
 .multi .linkbtn { border: 0; background: none; color: var(--muted); font: inherit; font-size: .85rem; cursor: pointer; text-decoration: underline; padding: 0 10px 8px; }
@@ -280,6 +283,7 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <h2 id="hFmt">פורמט</h2>
         <div class="field">
           <span class="lbl">עונות</span>
+          <p class="lockmsg" id="seasonLockMsg" role="status" hidden>הסינון מול יריבה מחושב על עונת 2025-26. כדי לבחור עונות אחרות, בטל קודם את הסינון מול יריבה.</p>
           <details class="multi" id="seasonPick">
             <summary id="seasonSummary">2025-26</summary>
             <div class="seasonlist" role="group" aria-label="העונות שמהן מחושבים כל הנתונים">
@@ -360,7 +364,7 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <div class="field">
           <label for="vsOpp">נגד יריבה</label>
           <select id="vsOpp"><option value="">ללא (נתוני העונות שנבחרו)</option></select>
-          <p class="hint">בחירת יריבה מציגה לכל שחקן את הממוצע ב־4 המשחקים האחרונים שלו מולה, מכל העונות מאז 2023-24 כולל פלייאוף.</p>
+          <p class="hint">בחירת יריבה מציגה לכל שחקן את הממוצע ב־4 המשחקים האחרונים שלו מולה בעונה הסדירה 2025-26.</p>
         </div>
         <div class="field"><label for="maxAge">גיל מקסימלי</label><input type="number" id="maxAge" min="19" max="42" value="42"></div>
         <label class="check"><input type="checkbox" id="hideTaken" checked> הסתר שחקנים שנבחרו</label>
@@ -1358,7 +1362,7 @@ function syncControls() {
   setField("vsOpp", st.vsOpp || "");
   $("zPool").textContent = st.teams * st.roster;
   $("vsNote").hidden = !st.vsOpp;
-  if (st.vsOpp) $("vsNote").innerHTML = `מוצגים ממוצעי ${D.vsGames} המשחקים האחרונים של כל שחקן מול <b>${esc(st.vsOpp)}</b> (מאז 2023-24, כולל פלייאוף). GP = מספר המשחקים מולה. <button type="button" id="vsClear">חזרה לנתוני העונות</button>`;
+  if (st.vsOpp) $("vsNote").innerHTML = `מוצגים ממוצעי ${D.vsGames} המשחקים האחרונים של כל שחקן מול <b>${esc(st.vsOpp)}</b> בעונה הסדירה 2025-26. GP = מספר המשחקים מולה. <button type="button" id="vsClear">חזרה לנתוני העונות</button>`;
   for (const b of document.querySelectorAll("[data-teamsel]")) b.setAttribute("aria-pressed", st.teamSel.includes(b.dataset.teamsel));
   $("teamSummary").textContent = !st.teamSel.length ? "כל הקבוצות"
     : st.teamSel.length <= 4 ? st.teamSel.map((t) => t === "-" ? "FA" : t).join(", ") : `${st.teamSel.length} קבוצות נבחרו`;
@@ -1368,7 +1372,9 @@ function syncControls() {
   $("onlyFav").checked = st.onlyFav;
   for (const b of document.querySelectorAll("[data-avs]")) b.setAttribute("aria-pressed", st.availSeasons.includes(Number(b.dataset.avs)));
   // Collapsed list shows the chosen seasons, newest first
-  $("seasonSummary").textContent = [...document.querySelectorAll("[data-avs]")]
+  document.querySelector(".seasonlist").classList.toggle("locked", !!st.vsOpp);
+  if (st.vsOpp) $("seasonSummary").textContent = "2025-26 (מול יריבה)";
+  else $("seasonSummary").textContent = [...document.querySelectorAll("[data-avs]")]
     .filter((b) => st.availSeasons.includes(Number(b.dataset.avs))).map((b) => b.textContent).join(", ");
   for (const b of document.querySelectorAll("[data-role]")) b.setAttribute("aria-pressed", st.roles.includes(b.dataset.role));
   for (const b of document.querySelectorAll("[data-inj]")) b.setAttribute("aria-pressed", b.dataset.inj === st.inj);
@@ -1397,6 +1403,13 @@ document.addEventListener("click", (e) => {
     // first click on a column shows the best first (lowest DRTG, highest of the rest)
     if (st.teamSort === t.dataset.tk) st.teamAsc = !st.teamAsc; else { st.teamSort = t.dataset.tk; st.teamAsc = false; }
     return update(false);
+  }
+  if (t.dataset.avs && st.vsOpp) {
+    // Seasons are fixed to 2025-26 while an opponent is picked; say so briefly
+    $("seasonLockMsg").hidden = false;
+    clearTimeout(window.seasonLockTimer);
+    window.seasonLockTimer = setTimeout(() => { $("seasonLockMsg").hidden = true; }, 4000);
+    return;
   }
   if (t.dataset.avs) {
     const i = Number(t.dataset.avs);
