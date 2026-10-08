@@ -1644,7 +1644,8 @@ function cmpFreeForTeams() {
   const on = new Set([...cmpPlayers("a"), ...cmpPlayers("b")].map((p) => p.id));
   return players.filter((p) => p.L && !on.has(p.id)).sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
 }
-let cmpSwapping = null;  // {side, id}: the player whose replacement is being picked
+let cmpSwapping = null;
+let cmpOpen = { a: false, b: false };  // team lists opened in this visit (they start folded)  // {side, id}: the player whose replacement is being picked
 let CMP_SW_LOOKUP = new Map();
 // Who can be added on each side; for a pickup, the player added comes from those not drafted
 function cmpPool(side) {
@@ -1683,7 +1684,8 @@ function cmpTotals(list) {
 function renderCmpSide(side) {
   const c = st.cmp, M = CMP_MODES[c.mode], S2 = side.toUpperCase();
   const box = $("cmpPick" + S2);
-  const folded = !!c.fold[side], count = cmpPlayers(side).length;
+  // A team's player list starts folded (just the team); elsewhere the chosen players show until folded
+  const folded = M.team ? !cmpOpen[side] : !!c.fold[side], count = cmpPlayers(side).length;
   $("cmpH" + S2).innerHTML = `<span>${M[side]}</span>` + (count > 1 || folded
     ? `<button type="button" class="foldbtn" data-cmpfold="${side}">${folded ? `▸ הצג את השחקנים (${count})` : "▾ צמצום"}</button>` : "");
   const rank = last.now.rank;
@@ -1916,15 +1918,19 @@ $("viewCmp").addEventListener("click", (e) => {
   } else if (t.dataset.cmpchart) c.chart = t.dataset.cmpchart;
   else if (t.id === "cmpSwap") {
     [c.a, c.b] = [c.b, c.a]; [c.ta, c.tb] = [c.tb, c.ta];
-    c.sw = { a: c.sw.b, b: c.sw.a }; c.fold = { a: c.fold.b, b: c.fold.a };
+    c.sw = { a: c.sw.b, b: c.sw.a }; c.fold = { a: c.fold.b, b: c.fold.a }; cmpOpen = { a: cmpOpen.b, b: cmpOpen.a };
   }
   else if (t.id === "cmpReset") {
     // Start over: empty both sides, back to my team vs the next one, no edits
     const n = Math.max(st.teams, 1);
     Object.assign(c, { a: [], b: [], tta: null, ttb: null, ta: myIdx(), tb: (myIdx() + 1) % n, sw: { a: [], b: [] }, fold: { a: false, b: false } });
+    cmpOpen = { a: false, b: false };
     cmpSwapping = null;
   }
-  else if (t.dataset.cmpfold) c.fold[t.dataset.cmpfold] = !c.fold[t.dataset.cmpfold];
+  else if (t.dataset.cmpfold) {
+    const side = t.dataset.cmpfold;
+    if (CMP_MODES[c.mode].team) cmpOpen[side] = !cmpOpen[side]; else c.fold[side] = !c.fold[side];
+  }
   else if (t.dataset.cmpsw) { const [side, id] = t.dataset.cmpsw.split(":"); cmpSwapping = { side, id: Number(id) }; return renderCmp(); }
   else if (t.dataset.cmpswcancel) { cmpSwapping = null; return renderCmp(); }
   else if (t.dataset.cmpundo) { const [side, id] = t.dataset.cmpundo.split(":"); c.sw[side] = c.sw[side].filter(([o]) => o !== Number(id)); }
