@@ -393,7 +393,7 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
           <span><b>USG%</b> אחוז מהפוזשנים של הקבוצה שהשחקן מסיים כשהוא על המגרש</span>
           <span><b>PACE</b> פוזשנים ל־48 דקות כשהשחקן על המגרש</span>
           <span><b>ORTG</b> נקודות שהקבוצה קולעת ל־100 פוזשנים כשהשחקן על המגרש</span>
-          <span><b>AST−TOV</b> כמה האסיסטים מוסיפים לך בפנטזי פחות כמה האיבודים מורידים (בציוני Z). חיובי = מפצה על האיבודים</span>
+          <span><b>AST/TOV</b> כמה אסיסטים השחקן נותן על כל איבוד. למשל 3.00 = שלושה אסיסטים לכל איבוד</span>
           <span><b>TEAM PACE 25-26</b> = הקצב ב־2025-26 של הקבוצה שהשחקן ישחק בה ב־2026-27. קצב גבוה יותר נותן יותר התקפות ויותר סטטיסטיקה</span>
         </div>
         <div class="tbl-wrap">
@@ -733,20 +733,18 @@ const ADV_COLS = [
   { k: "rank", l: "#", asc: true }, { k: "name", l: "שחקן", asc: true },
   { k: "gp", l: "GP", asc: false }, { k: "min", l: "MIN", asc: false },
   { k: "USG", l: "USG%", asc: false }, { k: "PACE", l: "PACE", asc: false },
-  { k: "ORTG", l: "ORTG", asc: false }, { k: "ASTTOV", l: "AST−TOV", asc: false },
+  { k: "ORTG", l: "ORTG", asc: false }, { k: "ASTTOV", l: "AST/TOV", asc: false },
   { k: "TPACE", l: "TEAM PACE 25-26", asc: false },
   { k: "act", l: "", nosort: true },
 ];
-// AST−TOV net: the assists' z plus the turnovers' z (fewer turnovers = positive); punted ones drop out
-function astTovNet(p) {
-  const z = last?.now.z.get(p.id);
-  if (!z) return null;
-  const counts = (k) => !(st.fmt === "cat" && st.punts.has(k));
-  return (counts("AST") ? z.z.AST : 0) + (counts("TOV") ? z.z.TOV : 0);
+// Assists per turnover (per game; the same at per 36). No ratio without turnovers to divide by.
+function astTovRatio(p) {
+  const tov = p.L.g.TOV;
+  return tov > 0 ? p.L.g.AST / tov : null;
 }
 function advVal(p, k) {
   if (k === "TPACE") return TEAM_STATS.get(p.team26)?.PACE ?? null;
-  if (k === "ASTTOV") return astTovNet(p);
+  if (k === "ASTTOV") return astTovRatio(p);
   if (!p.adv) return null;
   return { USG: p.adv[0] * 100, PACE: p.adv[1], ORTG: p.adv[2] }[k];
 }
@@ -795,7 +793,7 @@ function renderAdv() {
   $("advBody").innerHTML = rows.map((p) => {
     const cell = (k) => {
       const v = advVal(p, k);
-      const txt = v == null ? "–" : k === "ASTTOV" ? `${v > 0 ? "+" : ""}${v.toFixed(2)}` : v.toFixed(1);
+      const txt = v == null ? "–" : k === "ASTTOV" ? v.toFixed(2) : v.toFixed(1);
       return `<td style="${heats[k](v)}">${txt}</td>`;
     };
     return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
@@ -1205,7 +1203,7 @@ const SORT_OPTS = {
     { k: "USG", l: "USG%", asc: false },
     { k: "PACE", l: "PACE", asc: false },
     { k: "ORTG", l: "ORTG", asc: false },
-    { k: "ASTTOV", l: "AST−TOV נטו (אסיסטים מול איבודים)", asc: false },
+    { k: "ASTTOV", l: "AST/TOV (אסיסטים לכל איבוד)", asc: false },
     { k: "TPACE", l: "TEAM PACE 25-26 (הקבוצה החדשה)", asc: false },
     { k: "rank", l: "דירוג פנטזי", asc: true },
     { k: "min", l: "דקות למשחק (MIN)", asc: false },
