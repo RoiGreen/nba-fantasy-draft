@@ -307,6 +307,7 @@ table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px
 .cmpside.sa { --ca: var(--accent); } .cmpside.sb { --ca: var(--mine); }
 .cmpside h3 { margin: 0; font-size: .95rem; color: var(--ca); }
 .cmppick { display: flex; gap: 6px; }
+.cmppick select { flex: 1; min-width: 0; }
 .cmppick input { flex: 1; min-width: 0; font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .cmppick button, .cmpswap, .cmpbar-toggle button { font: inherit; font-weight: 600; font-size: .85rem; padding: 6px 12px; border-radius: 8px;
   border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
@@ -830,7 +831,7 @@ const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 5,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [], leagueName: "", teamNames: [], tags: {}, tagsMigrated: false,
-  cmp: { mode: "players", a: [], b: [], ta: 0, tb: 1, chart: "val", sw: { a: [], b: [] }, fold: { a: false, b: false } },
+  cmp: { mode: "players", a: [], b: [], ta: 0, tb: 1, tta: null, ttb: null, chart: "val", sw: { a: [], b: [] }, fold: { a: false, b: false } },
   sort: "zTotal", asc: false, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2], vsOpp: "",
 };
 // taken / mine = everything that marks a player as gone or on my team (table tags + draft picks);
@@ -897,7 +898,7 @@ function applySettings(s) {
   const cm = s.cmp;
   if (!cm || !["players", "teams", "trade", "pickup"].includes(cm.mode) || !Array.isArray(cm.a) || !Array.isArray(cm.b)) delete s.cmp;
   else {
-    s.cmp = { ta: 0, tb: 1, chart: "val", ...cm };
+    s.cmp = { ta: 0, tb: 1, tta: null, ttb: null, chart: "val", ...cm };
     if (!s.cmp.sw || !Array.isArray(s.cmp.sw.a) || !Array.isArray(s.cmp.sw.b)) s.cmp.sw = { a: [], b: [] };
     if (!s.cmp.fold || typeof s.cmp.fold !== "object") s.cmp.fold = { a: false, b: false };
   }
@@ -1677,6 +1678,34 @@ function renderCmpSide(side) {
     if (box.dataset.mode !== "teams") { box.innerHTML = `<select data-cmpteam="${side}" aria-label="${M[side]}"></select>`; box.dataset.mode = "teams"; }
     const sel = box.querySelector("select");
     if (sel !== document.activeElement) { sel.innerHTML = opts; sel.value = String(side === "a" ? c.ta : c.tb); }
+  } else if (c.mode === "trade" || c.mode === "players") {
+    if (box.dataset.mode !== "trade") {
+      box.innerHTML = `<select data-cmptt="${side}" aria-label="בחר קבוצה"></select><select data-cmptp="${side}" aria-label="בחר שחקן"></select>`;
+      box.dataset.mode = "trade";
+    }
+    const n = Math.max(st.teams, 1), key = "tt" + side;
+    // Default: I give from my team and get from the next one
+    if (c[key] == null) {
+      const t = side === "a" ? myIdx() : (myIdx() + 1) % n;
+      c[key] = picks.some((x) => x.team === t) ? String(t) : "all";  // before the draft: everyone
+    }
+    if (c[key] !== "all" && c[key] !== "free" && Number(c[key]) >= n) c[key] = "all";
+    const tsel = box.querySelector("[data-cmptt]"), psel = box.querySelector("[data-cmptp]");
+    if (tsel !== document.activeElement) {
+      tsel.innerHTML = Array.from({ length: n }, (_, i) =>
+        `<option value="${i}">${esc(teamName(i))}${i === myIdx() ? " (אני)" : ""} · ${picks.filter((x) => x.team === i).length} שחקנים</option>`).join("") +
+        `<option value="free">שחקנים שלא נבחרו</option><option value="all">כל השחקנים</option>`;
+      tsel.value = c[key];
+    }
+    const added = new Set(c[side]);
+    const from = c[key] === "all" ? players.filter((p) => p.L)
+      : c[key] === "free" ? players.filter((p) => p.L && !picks.some((x) => x.id === p.id))
+      : picks.filter((x) => x.team === Number(c[key])).map((x) => PLAYER_BY_ID.get(x.id)).filter(Boolean);
+    const pool = from.filter((p) => !added.has(p.id)).sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
+    if (psel !== document.activeElement) {
+      psel.innerHTML = `<option value="">${pool.length ? `בחר שחקן (${pool.length})` : "אין שחקנים בקבוצה הזו"}</option>` +
+        pool.slice(0, 500).map((p) => `<option value="${p.id}">${rank.has(p.id) ? `#${rank.get(p.id)} ` : ""}${esc(p.name)} · ${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</option>`).join("");
+    }
   } else {
     if (box.dataset.mode !== "players") {
       box.innerHTML = `<input data-cmpin="${side}" list="cmpList${S2}" placeholder="חיפוש שחקן…" autocomplete="off" aria-label="שחקן ל${M[side]}">` +
@@ -1867,6 +1896,14 @@ $("viewCmp").addEventListener("click", (e) => {
   saveSettings(); renderCmp();
 });
 $("viewCmp").addEventListener("change", (e) => {
+  const tt = e.target.closest("[data-cmptt]"), tp = e.target.closest("[data-cmptp]");
+  if (tt) { st.cmp["tt" + tt.dataset.cmptt] = tt.value; saveSettings(); return renderCmp(); }
+  if (tp) {
+    const side = tp.dataset.cmptp, id = Number(tp.value);
+    if (id && !st.cmp[side].includes(id)) st.cmp[side] = [...st.cmp[side], id].slice(-CMP_MODES[st.cmp.mode].max);  // one player each in "player vs player"
+    tp.blur();
+    saveSettings(); return renderCmp();
+  }
   const sel = e.target.closest("[data-cmpteam]");
   if (!sel) return;
   st.cmp[sel.dataset.cmpteam === "a" ? "ta" : "tb"] = Number(sel.value);
