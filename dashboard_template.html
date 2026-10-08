@@ -556,6 +556,7 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
         <label class="check"><input type="checkbox" id="hideTaken" checked> הסתר שחקנים שנבחרו</label>
         <label class="check"><input type="checkbox" id="onlyFav"> רק מועדפים</label>
         <label class="check"><input type="checkbox" id="onlyMoved"> רק שחקנים שעברו קבוצה</label>
+        <label class="check"><input type="checkbox" id="noHurt"> ללא שחקנים פצועים</label>
         <div class="field">
           <span class="lbl">נפצעו בעונה שעברה</span>
           <div class="seg" role="group" aria-label="שחקנים שנפצעו">
@@ -838,7 +839,7 @@ const hasPos = (p, x) => (p.pos || "").split("/").includes(x);
 const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 5,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
-  hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [], leagueName: "", teamNames: [], tags: {}, tagsMigrated: false,
+  hideTaken: true, onlyMoved: false, noHurt: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [], leagueName: "", teamNames: [], tags: {}, tagsMigrated: false,
   cmp: { mode: "players", a: [], b: [], ta: 0, tb: 1, tta: null, ttb: null, chart: "val", sw: { a: [], b: [] }, fold: { a: false, b: false } },
   sort: "zTotal", asc: false, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2], vsOpp: "",
 };
@@ -1010,6 +1011,7 @@ function passes(p) {
     (st.rookies === "all" || (st.rookies === "only") === !!p.rookie) &&
     (!st.hideTaken || (!taken.has(p.id) && !mine.has(p.id))) &&
     (!st.onlyMoved || hasMoved(p)) &&
+    (!st.noHurt || !p.hurt) &&  // on ESPN's injury list now (OUT or GTD)
     (st.inj === "all" || (st.inj === "only") === !!p.injured) &&
     (!st.roles.length || st.roles.includes(p.role)) &&
     (!st.onlyFav || fav.has(p.id)) &&
@@ -2349,7 +2351,7 @@ function syncControls() {
   for (const b of document.querySelectorAll("[data-inj]")) b.setAttribute("aria-pressed", b.dataset.inj === st.inj);
   for (const b of document.querySelectorAll("[data-rk]")) b.setAttribute("aria-pressed", b.dataset.rk === st.rookies);
   fillSort();
-  $("hideTaken").checked = st.hideTaken; $("onlyMoved").checked = st.onlyMoved;
+  $("hideTaken").checked = st.hideTaken; $("onlyMoved").checked = st.onlyMoved; $("noHurt").checked = st.noHurt;
 }
 function update(recompute = true) {
   saveSettings(); syncControls();
@@ -2627,7 +2629,7 @@ $("undoBtn").addEventListener("click", () => {
   picks.pop(); rebuildSets(); render(); flushPicks();
 });
 $("q").addEventListener("input", (e) => { st.q = e.target.value; update(false); });
-for (const id of ["hideTaken", "onlyMoved", "onlyFav"]) $(id).addEventListener("change", (e) => { st[id] = e.target.checked; update(false); });
+for (const id of ["hideTaken", "onlyMoved", "onlyFav", "noHurt"]) $(id).addEventListener("change", (e) => { st[id] = e.target.checked; update(false); });
 
 if (D.seasons.includes(D.current)) document.querySelector('[data-avs="4"]').hidden = false;
 st.availSeasons = st.availSeasons.filter((i) => SEASONS[i] != null);
