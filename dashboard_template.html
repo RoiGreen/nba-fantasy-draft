@@ -293,6 +293,9 @@ table.dboard td .dn { font-weight: 700; }
 table.dboard td[data-cell] { cursor: pointer; }
 table.dboard td[data-cell]:hover { outline: 1px dashed var(--accent); outline-offset: -3px; }
 table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px; }
+.tipbox { position: fixed; z-index: 50; max-width: 280px; padding: 7px 10px; border-radius: 8px; background: var(--ink); color: var(--surface);
+  font-size: .82rem; font-weight: 500; line-height: 1.45; pointer-events: none; box-shadow: 0 4px 14px rgb(0 0 0 / .18); }
+th[data-tip] { text-decoration: underline dotted color-mix(in srgb, var(--muted) 60%, transparent); text-underline-offset: 4px; }
 table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-top: 2px solid var(--line); }
 .toast { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); inset-inline: 0; margin: 0 auto; width: fit-content; max-width: 90%;
   z-index: 60; background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-weight: 600; direction: rtl; }
@@ -591,13 +594,7 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
       </section>
 
       <section class="view" id="viewAdv" role="tabpanel" aria-labelledby="tabAdv" hidden>
-        <div class="legend">
-          <span><b>USG%</b> אחוז מהפוזשנים של הקבוצה שהשחקן מסיים כשהוא על המגרש</span>
-          <span><b>PACE</b> פוזשנים ל־48 דקות כשהשחקן על המגרש</span>
-          <span><b>ORTG</b> נקודות שהקבוצה קולעת ל־100 פוזשנים כשהשחקן על המגרש</span>
-          <span><b>AST/TOV</b> כמה אסיסטים השחקן נותן על כל איבוד. למשל 3.00 = שלושה אסיסטים לכל איבוד</span>
-          <span><b>TEAM PACE</b> = הקצב בעונות שנבחרו של הקבוצה שהשחקן ישחק בה ב־2026-27. קצב גבוה יותר נותן יותר התקפות ויותר סטטיסטיקה</span>
-        </div>
+        <p class="dhint">העבר את העכבר על שם של קטגוריה כדי לראות מה היא מודדת.</p>
         <div class="tbl-wrap">
           <table>
             <thead><tr id="advHead"></tr></thead>
@@ -1197,9 +1194,11 @@ function computeDist() {
 const ADV_COLS = [
   { k: "rank", l: "#", asc: true }, { k: "name", l: "Player Name", asc: true },
   { k: "gp", l: "GP", asc: false }, { k: "min", l: "MIN", asc: false },
-  { k: "USG", l: "USG%", asc: false }, { k: "PACE", l: "PACE", asc: false },
-  { k: "ORTG", l: "ORTG", asc: false }, { k: "ASTTOV", l: "AST/TOV", asc: false },
-  { k: "TPACE", l: "TEAM PACE 25-26", asc: false },
+  { k: "USG", l: "USG%", asc: false, tip: "אחוז מהפוזשנים של הקבוצה שהשחקן מסיים כשהוא על המגרש" },
+  { k: "PACE", l: "PACE", asc: false, tip: "פוזשנים ל־48 דקות כשהשחקן על המגרש" },
+  { k: "ORTG", l: "ORTG", asc: false, tip: "נקודות שהקבוצה קולעת ל־100 פוזשנים כשהשחקן על המגרש" },
+  { k: "ASTTOV", l: "AST/TOV", asc: false, tip: "כמה אסיסטים השחקן נותן על כל איבוד" },
+  { k: "TPACE", l: "TEAM PACE 25-26", asc: false, tip: "הקצב בעונות שנבחרו של הקבוצה שהשחקן ישחק בה ב־2026-27. קצב גבוה יותר נותן יותר התקפות ויותר סטטיסטיקה" },
   { k: "act", l: "", nosort: true },
 ];
 // Assists per turnover (per game; the same at per 36). No ratio without turnovers to divide by.
@@ -1257,7 +1256,7 @@ function renderAdv() {
   $("advHead").innerHTML = (statCol ? `<th class="nosort" scope="col">${esc(statCol.l)} Rank</th>` : "") + ADV_COLS.map((c) => {
     const cls = [st.advSort === c.k ? "sorted" : "", st.advSort === c.k && st.advAsc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : ""].join(" ");
     if (c.k === "rank" && posR) return posTh(posR);
-    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.k === "rank" ? (st.mode === "g" ? "Rank" : "Rank 36 MIN") : c.l)}</th>`;
+    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`}${c.tip ? ` data-tip="${esc(c.tip)}"` : ""} scope="col">${esc(c.k === "rank" ? (st.mode === "g" ? "Rank" : "Rank 36 MIN") : c.l)}</th>`;
   }).join("");
   $("advBody").innerHTML = rows.map((p) => {
     const cell = (k) => {
@@ -1275,7 +1274,12 @@ function renderAdv() {
   }).join("") || EMPTY_ROW(ADV_COLS.length + (statCol ? 1 : 0));
 
   // Teams: lower DRTG is better, so its shading is inverted
-  const TCOLS = [{ k: "PACE", l: "PACE" }, { k: "OFF_RATING", l: "ORTG" }, { k: "DEF_RATING", l: "DRTG", inv: true }, { k: "NET_RATING", l: "NET" }];
+  const TCOLS = [
+    { k: "PACE", l: "PACE", tip: "פוזשנים של הקבוצה ל־48 דקות. קצב גבוה יותר נותן יותר התקפות ויותר סטטיסטיקה" },
+    { k: "OFF_RATING", l: "ORTG", tip: "נקודות שהקבוצה קולעת ל־100 פוזשנים" },
+    { k: "DEF_RATING", l: "DRTG", inv: true, tip: "נקודות שהקבוצה סופגת ל־100 פוזשנים. נמוך יותר = הגנה טובה יותר" },
+    { k: "NET_RATING", l: "NET", tip: "ORTG פחות DRTG: בכמה נקודות ל־100 פוזשנים הקבוצה טובה מהיריבות" },
+  ];
   const sign = (c) => (c.inv ? -1 : 1);
   const tcol = TCOLS.find((c) => c.k === st.teamSort) || TCOLS[0];
   const teams = [...TEAM_ROWS].sort((a, b) => (st.teamAsc ? 1 : -1) * sign(tcol) * (a[tcol.k] - b[tcol.k]));
@@ -1284,7 +1288,7 @@ function renderAdv() {
   $("teamHead").innerHTML = `<th class="nosort" scope="col">${tcol.l} Rank</th><th class="nosort" scope="col">קבוצה</th>` +
     TCOLS.map((c) => {
       const cls = [st.teamSort === c.k ? "sorted" : "", st.teamSort === c.k && st.teamAsc ? "asc" : ""].join(" ");
-      return `<th class="${cls}" tabindex="0" data-tk="${c.k}" scope="col">${c.l}</th>`;
+      return `<th class="${cls}" tabindex="0" data-tk="${c.k}" data-tip="${esc(c.tip)}" scope="col">${c.l}</th>`;
     }).join("");
   $("teamBody").innerHTML = teams.map((t) =>
     `<tr class="${st.teamSel.includes(t.t) ? "sel-team" : ""}"><td class="rank" style="color:var(--accent)">${teamRank(sign(tcol) * t[tcol.k])}</td>` +
@@ -1455,6 +1459,23 @@ function renderDraft() {
   $("undoBtn").disabled = !picks.length;
   renderPickEdit(byTeam);
 }
+
+// ---------- header explanations on hover / keyboard focus ----------
+const tipBox = Object.assign(document.createElement("div"), { className: "tipbox", hidden: true, role: "tooltip" });
+document.body.append(tipBox);
+function showTip(el) {
+  tipBox.textContent = el.dataset.tip;
+  tipBox.hidden = false;
+  const r = el.getBoundingClientRect(), w = tipBox.offsetWidth, h = tipBox.offsetHeight;
+  const left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
+  const top = r.bottom + 6 + h > innerHeight ? r.top - h - 6 : r.bottom + 6;
+  tipBox.style.left = `${left}px`; tipBox.style.top = `${top}px`;
+}
+const hideTip = () => { tipBox.hidden = true; };
+document.addEventListener("mouseover", (e) => { const el = e.target.closest("[data-tip]"); if (el) showTip(el); else hideTip(); });
+document.addEventListener("focusin", (e) => { const el = e.target.closest("[data-tip]"); if (el) showTip(el); });
+document.addEventListener("focusout", hideTip);
+addEventListener("scroll", hideTip, true);
 
 // ---------- editing a board cell ----------
 function renderPickEdit(byTeam) {
