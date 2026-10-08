@@ -1010,7 +1010,7 @@ function scheduleLine(p) {
   if (!p.team26) return "";
   const e = TEAM_WEEK.get(p.team26) || { total: 0, played: 0, today: null };
   const when = e.today
-    ? `<b>${e.today.home ? "נגד" : "אצל"} ${esc(e.today.opp)}</b> | ${e.today.t.toLocaleString("he-IL", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" })}${e.today.pre ? " (הכנה)" : ""}`
+    ? `<b dir="ltr">${esc(e.today.opp)} (${e.today.home ? "Home" : "Away"})</b> | ${e.today.t.toLocaleString("he-IL", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" })}${e.today.pre ? " (הכנה)" : ""}`
     : "אין משחק היום";
   return `<span class="sched" title="משחקים השבוע (שני עד ראשון): ${e.played} שוחקו מתוך ${e.total}">${when} (${e.played}/${e.total})</span>`;
 }
