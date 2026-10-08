@@ -143,8 +143,10 @@ tr.is-mine td.name .n { color: var(--mine); }
 .actpick.is-f summary { border-color: var(--fav); color: var(--ink); }
 .actpick.is-m summary { border-color: var(--mine); background: color-mix(in srgb, var(--mine) 14%, var(--surface)); color: var(--ink); }
 .actpick.is-t summary { border-color: var(--ink); background: var(--sunk); color: var(--ink); }
-.actmenu { position: absolute; top: calc(100% + 4px); inset-inline-end: 0; z-index: 6; min-width: 9.5em; display: grid; gap: 2px; padding: 4px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+/* The open menu sits above every other row's sticky cell and opens into the table */
+td.acts:has(details[open]) { z-index: 20; }
+.actmenu { position: absolute; top: calc(100% + 4px); left: 0; right: auto; z-index: 21; min-width: 9.5em; display: grid; gap: 2px; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.28); }
 .actmenu button { display: grid; grid-template-columns: 1.2em 1fr; align-items: center; gap: 4px; text-align: start; font: inherit; font-size: .85rem;
   padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); cursor: pointer; }
 .actmenu button:hover:not(:disabled) { background: var(--sunk); }
