@@ -310,9 +310,22 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
           <input type="range" id="minMin" min="0" max="36" value="0">
         </div>
         <div class="field">
-          <label for="minAst">מינימום אסיסטים למשחק</label>
-          <input type="number" id="minAst" min="0" max="12" step="0.5" value="0">
-          <p class="hint">שימושי במיון לפי AST/TOV, כדי לסנן שחקנים שכמעט לא מוסרים.</p>
+          <label for="minCatVal" id="minCatLabel">מינימום לפי קטגוריה</label>
+          <div class="sortrow">
+            <select id="minCat" aria-label="קטגוריה לסינון">
+              <option value="PTS">נקודות (PTS)</option>
+              <option value="REB">ריבאונדים (REB)</option>
+              <option value="AST">אסיסטים (AST)</option>
+              <option value="STL">חטיפות (STL)</option>
+              <option value="BLK">חסימות (BLK)</option>
+              <option value="FG3M">שלשות (3PM)</option>
+              <option value="FG_PCT">FG% (באחוזים)</option>
+              <option value="FT_PCT">FT% (באחוזים)</option>
+              <option value="TOV">איבודים (TOV) – מקסימום</option>
+            </select>
+            <input type="number" id="minCatVal" min="0" step="0.1" placeholder="0" style="width:5.5em">
+          </div>
+          <p class="hint" id="minCatHint">ריק או 0 = בלי סינון. הערכים לפי מצב התצוגה (אמיתי או 36 דקות).</p>
         </div>
         <div class="field">
           <span class="lbl">עמדה</span>
@@ -504,7 +517,7 @@ function applySeasons() {
 // ---------- state ----------
 const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 2,
-  q: "", minGp: 50, minMin: 0, minAst: 0, pos: new Set(), teamSel: [], maxAge: 42,
+  q: "", minGp: 50, minMin: 0, minCat: "PTS", minVal: 0, pos: new Set(), teamSel: [], maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
   sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [0, 1, 2],
 };
@@ -529,6 +542,8 @@ function applySettings(s) {
   if (s.onlyInj && !s.inj) s.inj = "only";
   if (!Array.isArray(s.roles)) s.roles = s.role ? [s.role] : [];
   if (!Array.isArray(s.teamSel)) s.teamSel = s.team ? [s.team] : [];
+  if (s.minAst && !s.minVal) { s.minCat = "AST"; s.minVal = s.minAst; }
+  delete s.minAst;
   if ((s.settingsVersion || 1) < 2) { s.teams = 8; s.settingsVersion = 2; }
   if (["rankAlt", "gap", "trend", "vers", "weak"].includes(s.sort)) { s.sort = "rank"; s.asc = true; }
   delete s.onlySleepers;
@@ -633,7 +648,7 @@ function passes(p) {
     (st.inj === "all" || (st.inj === "only") === !!p.injured) &&
     (!st.roles.length || st.roles.includes(p.role)) &&
     (!st.onlyFav || fav.has(p.id)) &&
-    p.L.g.AST >= (st.minAst || 0);
+    catOk(p);
 }
 
 function render() {
@@ -675,7 +690,8 @@ function render() {
   };
   const statLabel = { FG_RAW: "FG%", FT_RAW: "FT%" }[st.sort] ||
     (["rank", "name", "age"].includes(st.sort) ? null : COLS.find((c) => c.k === st.sort)?.l);
-  const statRank = statLabel ? rankerFor(allRows.map(best)) : null;
+  // Category ranks compare only players who pass the category threshold
+  const statRank = statLabel ? rankerFor(allRows.filter((r) => catOk(r.p)).map(best)) : null;
 
   const posR = positionRank();
 
@@ -778,6 +794,17 @@ function positionRank() {
 const POS_NAMES = { G: "Guard", F: "Forward", C: "Center" };
 const posTh = (pr) => pr ? `<th class="nosort" scope="col">${POS_NAMES[pr.pos]} Rank</th>` : "";
 const posTd = (pr, p) => pr ? `<td class="rank" style="color:var(--mine)">${pr.rank.get(p.id) ?? "–"}</td>` : "";
+
+// Threshold on one category, typed by the user: a minimum, or a maximum for turnovers.
+// Percentages are typed as percents (45 = 45%). Values follow the current view (per game or per 36).
+function catOk(p) {
+  const v = Number(st.minVal) || 0;
+  if (!v) return true;
+  const o = p.L[st.mode];
+  if (st.minCat === "TOV") return o.TOV <= v;
+  const x = st.minCat.endsWith("_PCT") ? o[st.minCat] * 100 : o[st.minCat];
+  return x >= v;
+}
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
 
@@ -897,8 +924,8 @@ function renderAdv() {
     ? ADV_COLS.find((c) => c.k === st.advSort) : null;
   let statRank = null;
   if (statCol) {
-    // AST/TOV is ranked only among players who pass the assists minimum
-    const pool = st.advSort === "ASTTOV" ? list.filter((p) => p.L.g.AST >= (st.minAst || 0)) : list;
+    // Ranked only among players who pass the category threshold
+    const pool = list.filter(catOk);
     const vals = pool.map((p) => key(p)).filter((v) => v != null && v !== -Infinity).sort((a, b) => b - a);
     statRank = (p) => {
       const v = key(p);
@@ -1210,7 +1237,9 @@ function syncControls() {
   $("teams").value = st.teams; $("roster").value = st.roster; $("q").value = st.q;
   $("minGp").value = st.minGp; $("minGpOut").textContent = st.minGp;
   $("minMin").value = st.minMin; $("minMinOut").textContent = st.minMin;
-  $("minAst").value = st.minAst || 0;
+  $("minCat").value = st.minCat;
+  $("minCatVal").value = st.minVal ? st.minVal : "";
+  $("minCatLabel").textContent = st.minCat === "TOV" ? "מקסימום לפי קטגוריה" : "מינימום לפי קטגוריה";
   $("maxAge").value = st.maxAge;
   for (const b of document.querySelectorAll("[data-teamsel]")) b.setAttribute("aria-pressed", st.teamSel.includes(b.dataset.teamsel));
   $("teamSummary").textContent = !st.teamSel.length ? "כל הקבוצות"
@@ -1373,7 +1402,8 @@ const num = (id, key, lo, hi, re = true) => $(id).addEventListener("input", (e) 
 num("teams", "teams", 4, 30); num("roster", "roster", 5, 20);
 num("minGp", "minGp", 10, 82); num("minMin", "minMin", 0, 36);
 num("maxAge", "maxAge", 19, 42, false);
-num("minAst", "minAst", 0, 12, false);
+$("minCat").addEventListener("change", (e) => { st.minCat = e.target.value; update(false); });
+$("minCatVal").addEventListener("input", (e) => { const v = Number(e.target.value); st.minVal = Number.isFinite(v) && v > 0 ? v : 0; update(false); });
 num("myPos", "myPos", 1, 30, false);
 $("snake").addEventListener("change", (e) => { st.snake = e.target.checked; update(false); });
 $("undoBtn").addEventListener("click", () => {
