@@ -5,7 +5,8 @@ Run nba_stats_2025_26.py first, then:
     python build_dashboard.py
 
 Reads dashboard_template.html, embeds the player data and writes draft_dashboard.html.
-Rankings are computed inside the page so every filter re-ranks live.
+Every player carries his 2023-24, 2024-25 and 2025-26 lines; the page picks the seasons to use,
+so rankings, the advanced tab, the team table and the importance panel all follow the season choice.
 """
 
 import json
@@ -24,7 +25,7 @@ SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/u
 SITE_RESET = ("html{color-scheme:light dark}body{margin:0;font:14px/1.45 system-ui,-apple-system,'Segoe UI',sans-serif}"
               "img{max-width:100%}[hidden]{display:none!important}")
 
-MIN_GP = 10  # keep the file small; the page filters further
+SEASON_MIN_GP = 5  # a season counts for a player once he played this many games in it
 STATS = ["MIN", "PTS", "REB", "AST", "STL", "BLK", "FG3M", "TOV", "FGM", "FGA", "FTM", "FTA"]
 ADV = ["USG_PCT", "PACE", "OFF_RATING"]
 TEAM_ADV = ["PACE", "OFF_RATING", "DEF_RATING", "NET_RATING"]
@@ -36,10 +37,9 @@ FULL_SEASON_GP = 40   # what counts as a full season before that
 FULL_ROLE_MIN = 25    # and a real role in it
 INJURED_CSV = HERE / "injured_last_full_season.csv"
 ROOKIE_CSV = HERE / "rookie_projections_2026_27.csv"
-DIST_CSV = HERE / "team_distribution.csv"  # from team_distribution.py
-ROLES_CSV = HERE / "team_roles_2026_27.csv"  # from team_distribution.py
-# Availability: games played in each of the last three seasons (from fetch_rookie_history.py)
+# Seasons the page can choose from, by start year, and their files
 AVAIL_SEASONS = [2023, 2024, 2025]
+SEASON_TAG = {2023: "_2023_24", 2024: "_2024_25", 2025: ""}  # 2025-26 files carry no suffix
 SEASON_FILES = HERE / "nba_2025_26" / "rookies"
 
 
@@ -64,7 +64,7 @@ def availability(roster: pd.DataFrame) -> dict[int, list]:
     return out
 
 
-def entry(r, roster, adv, post=None) -> dict:
+def entry(r, roster, adv) -> dict:
     pid = int(r["PLAYER_ID"])
     on_roster = pid in roster.index
     p = {
@@ -77,10 +77,6 @@ def entry(r, roster, adv, post=None) -> dict:
         "gp": int(r["GP"]),
         "s": [round(float(r[c]), 2) for c in STATS],
     }
-    if post is not None and pid in post.index:
-        q = post.loc[pid]
-        p["post_gp"] = int(q["GP"])
-        p["post"] = [round(float(q[c]), 2) for c in STATS]
     if pid in adv.index:
         p["adv"] = [round(float(adv.at[pid, c]), 3) for c in ADV]
     return {k: v if isinstance(v, list) else (None if pd.isna(v) else v) for k, v in p.items()}
@@ -141,17 +137,43 @@ def rookies(existing: set[int]) -> list[dict]:
     return out
 
 
+def season_players(roster: pd.DataFrame) -> list[dict]:
+    """One record per player with a line for each season he played (per game, plus advanced)."""
+    by_id: dict[int, dict] = {}
+    for y in AVAIL_SEASONS:
+        base = pd.read_csv(DATA / f"players_base_pergame_regular{SEASON_TAG[y]}.csv")
+        adv = pd.read_csv(DATA / f"players_advanced_pergame_regular{SEASON_TAG[y]}.csv").set_index("PLAYER_ID")
+        for _, r in base[base["GP"] >= SEASON_MIN_GP].iterrows():
+            pid = int(r["PLAYER_ID"])
+            on_roster = pid in roster.index
+            p = by_id.setdefault(pid, {
+                "id": pid,
+                "team26": roster.at[pid, "TEAM_ABBREVIATION"] if on_roster else None,
+                "pos": roster.at[pid, "POSITION"] if on_roster else None,
+                "seasons": {},
+            })
+            p["name"] = r["PLAYER_NAME"]                   # latest spelling wins
+            p["age"] = int(r["AGE"]) + (AVAIL_SEASONS[-1] - y)  # age in 2025-26
+            line = {"gp": int(r["GP"]), "t": r["TEAM_ABBREVIATION"], "s": [round(float(r[c]), 2) for c in STATS]}
+            if pid in adv.index:
+                line["adv"] = [round(float(adv.at[pid, c]), 3) for c in ADV]
+            p["seasons"][str(y)] = line
+    for p in by_id.values():
+        p["team26"] = None if pd.isna(p["team26"]) else p["team26"]
+        p["pos"] = None if pd.isna(p["pos"]) else p["pos"]
+    return list(by_id.values())
+
+
 def main() -> None:
     current = pd.read_csv(DATA / "players_base_pergame_regular.csv")
-    post = pd.read_csv(DATA / "players_base_pergame_post_allstar.csv").set_index("PLAYER_ID")
     roster = pd.read_csv(DATA / "player_index_2026_27.csv").set_index("PERSON_ID")
-    adv = pd.read_csv(DATA / "players_advanced_pergame_regular.csv").set_index("PLAYER_ID")
 
+    # Missed most of 2025-26 after a full season before it: drives the "injured" filter and its CSV
     injured = injured_players(current, roster)
     injured_ids = {p["id"] for p in injured}
-    players = [entry(r, roster, adv, post) for _, r in current[current["GP"] >= MIN_GP].iterrows()
-               if int(r["PLAYER_ID"]) not in injured_ids]
-    players += injured
+    players = season_players(roster)
+    for p in players:
+        p["injured"] = p["id"] in injured_ids
     players += rookies({p["id"] for p in players})
 
     pd.DataFrame([{
@@ -164,32 +186,20 @@ def main() -> None:
     print(f"Saved {INJURED_CSV.name} ({len(injured)} players)")
 
     abbr = roster.drop_duplicates("TEAM_ID").set_index("TEAM_ID")["TEAM_ABBREVIATION"]
-    team_adv = pd.read_csv(DATA / "teams_advanced_pergame_regular.csv")
-    teams = [{"t": abbr.get(r["TEAM_ID"]), "name": r["TEAM_NAME"],
-              **{c: round(float(r[c]), 2) for c in TEAM_ADV}}
-             for _, r in team_adv.iterrows()]
+    team_seasons = {}
+    for y in AVAIL_SEASONS:
+        team_adv = pd.read_csv(DATA / f"teams_advanced_pergame_regular{SEASON_TAG[y]}.csv")
+        team_seasons[str(y)] = [{"t": abbr.get(r["TEAM_ID"]), "name": r["TEAM_NAME"],
+                                 **{c: round(float(r[c]), 2) for c in TEAM_ADV}}
+                                for _, r in team_adv.iterrows()]
 
     html = TEMPLATE.read_text(encoding="utf-8")
     avail = availability(roster)
     for p in players:
         p["avail"] = avail.get(p["id"], [None] * len(AVAIL_SEASONS))
 
-    if ROLES_CSV.exists():
-        roles = pd.read_csv(ROLES_CSV).set_index("PLAYER_ID")["ROLE"].to_dict()
-        for p in players:
-            p["role"] = roles.get(p["id"])
-
-    dist = []
-    if DIST_CSV.exists():
-        for _, r in pd.read_csv(DIST_CSV).iterrows():
-            dist.append({"t": r["TEAM_ABBREVIATION"], "key": round(float(r["KEY_SHARE_2026_27"]), 3),
-                         "rot": round(float(r["ROTATION_SHARE_2026_27"]), 3),
-                         "bench": round(float(r["BENCH_SHARE_2026_27"]), 3),
-                         "n": round(float(r["EFFECTIVE_N_2026_27"]), 1), "players": r["KEY_PLAYERS_2026_27"]})
-    else:
-        print(f"{DIST_CSV.name} not found, skipping the importance panel (run team_distribution.py)")
-
-    payload = json.dumps({"stats": STATS, "players": players, "teams": teams, "dist": dist}, ensure_ascii=False, separators=(",", ":"))
+    payload = json.dumps({"stats": STATS, "seasons": AVAIL_SEASONS, "players": players, "teamSeasons": team_seasons},
+                         ensure_ascii=False, separators=(",", ":"))
     html = html.replace("/*__DATA__*/null", payload)
     OUT.write_text(html, encoding="utf-8")
     build_site(html)

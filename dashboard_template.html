@@ -160,6 +160,7 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
 .pickchip { font-family: var(--font-num); font-size: .75rem; font-weight: 700; padding: 0 6px; border-radius: 4px; background: var(--sunk); color: var(--ink); }
 .btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
 
+tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--accent); font-weight: 700; }
 .dist { display: grid; gap: 3px; }
 .dist button { display: grid; grid-template-columns: 3em minmax(0, 1fr); gap: 8px; align-items: center; width: 100%;
   border: 0; background: transparent; color: var(--ink); font: inherit; padding: 3px 4px; border-radius: 6px; cursor: pointer; text-align: start; }
@@ -227,7 +228,7 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
   <header class="top">
     <div>
       <h1>חדר הדראפט <span class="yr">2026-27</span></h1>
-      <p class="sub">מבוסס על סטטיסטיקה רשמית של עונת 2025-26. הדירוג מחושב מחדש עם כל סינון.</p>
+      <p class="sub" id="subTitle">מבוסס על סטטיסטיקה רשמית של ה־NBA. הדירוג מחושב מחדש עם כל סינון.</p>
     </div>
     <div style="display:grid;gap:4px;justify-items:end">
       <div class="board-count">
@@ -245,6 +246,15 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
     <aside>
       <section class="panel" aria-labelledby="hFmt">
         <h2 id="hFmt">פורמט</h2>
+        <div class="field">
+          <span class="lbl">עונות</span>
+          <div class="chips" role="group" aria-label="העונות שמהן מחושבים כל הנתונים">
+            <button class="chip" data-avs="2" aria-pressed="true">2025-26</button>
+            <button class="chip" data-avs="1" aria-pressed="true">2024-25</button>
+            <button class="chip" data-avs="0" aria-pressed="true">2023-24</button>
+          </div>
+          <p class="hint">כל הנתונים בכל הטבלאות מחושבים מהעונות שנבחרו. כמה עונות = ממוצע משוקלל לפי משחקים.</p>
+        </div>
         <div class="field">
           <span class="lbl">סוג ליגה</span>
           <div class="seg" role="group" aria-label="סוג ליגה">
@@ -289,14 +299,6 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
         <div class="field">
           <label for="minMin">מינימום דקות למשחק <output id="minMinOut">0</output></label>
           <input type="range" id="minMin" min="0" max="36" value="0">
-        </div>
-        <div class="field">
-          <span class="lbl">זמינות לפי עונות</span>
-          <div class="chips" role="group" aria-label="עונות לחישוב הזמינות">
-            <button class="chip" data-avs="2" aria-pressed="true">2025-26</button>
-            <button class="chip" data-avs="1" aria-pressed="true">2024-25</button>
-            <button class="chip" data-avs="0" aria-pressed="true">2023-24</button>
-          </div>
         </div>
         <div class="field">
           <span class="lbl">עמדה</span>
@@ -378,7 +380,7 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
         <span><b>זמינות</b> = אחוז המשחקים ששיחק בעונות שנבחרו (רק עונות שבהן היה בליגה). מעבר עכבר מציג את המשחקים בכל עונה</span>
         <span><b>Z</b> = כמה השחקן טוב מהשחקן הממוצע שנבחר בדראפט, בסכום כל הקטגוריות. 0 זה ממוצע, וככל שגבוה יותר הוא שווה יותר</span>
         <span><span class="rk">R #3</span> רוקי ומקום הבחירה בדראפט. המספרים הם תחזית</span>
-        <span><span class="inj" style="margin:0">24-25</span> נפצע בעונה שעברה, מוצגת העונה המלאה האחרונה שלו</span>
+        <span><span class="inj" style="margin:0">24-25</span> אין לו משחקים בעונה האחרונה שבחרת, הנתונים מהעונה האחרונה שבה שיחק</span>
       </div>
       <div class="tbl-wrap">
         <table>
@@ -394,7 +396,7 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
           <span><b>PACE</b> פוזשנים ל־48 דקות כשהשחקן על המגרש</span>
           <span><b>ORTG</b> נקודות שהקבוצה קולעת ל־100 פוזשנים כשהשחקן על המגרש</span>
           <span><b>AST/TOV</b> כמה אסיסטים השחקן נותן על כל איבוד. למשל 3.00 = שלושה אסיסטים לכל איבוד</span>
-          <span><b>TEAM PACE 25-26</b> = הקצב ב־2025-26 של הקבוצה שהשחקן ישחק בה ב־2026-27. קצב גבוה יותר נותן יותר התקפות ויותר סטטיסטיקה</span>
+          <span><b>TEAM PACE</b> = הקצב בעונות שנבחרו של הקבוצה שהשחקן ישחק בה ב־2026-27. קצב גבוה יותר נותן יותר התקפות ויותר סטטיסטיקה</span>
         </div>
         <div class="tbl-wrap">
           <table>
@@ -402,7 +404,7 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
             <tbody id="advBody"></tbody>
           </table>
         </div>
-        <h3>קבוצות 2025-26</h3>
+        <h3 id="teamTitle">קבוצות</h3>
         <div class="tbl-wrap short">
           <table>
             <thead><tr id="teamHead"></tr></thead>
@@ -435,10 +437,44 @@ function line(arr, mode) {
 }
 const fpts = (o) => Object.entries(PTSW).reduce((a, [k, w]) => a + o[k] * w, 0);
 
-const players = D.players.map((p) => {
-  const L = { g: line(p.s, "g"), "36": line(p.s, "36") };
-  return { ...p, L, F: { g: fpts(L.g), "36": fpts(L["36"]) } };
-});
+const SEASONS = D.seasons;  // start years, e.g. [2023, 2024, 2025]
+const seasonLabel = (y) => `${String(y).slice(2)}-${String(y + 1).slice(2)}`;
+const players = D.players.map((p) => ({ ...p }));
+function setLines(p) {
+  p.L = { g: line(p.s, "g"), "36": line(p.s, "36") };
+  p.F = { g: fpts(p.L.g), "36": fpts(p.L["36"]) };
+}
+const chosenSeasons = () => st.availSeasons.map((i) => SEASONS[i]).sort();
+function seasonRange() {
+  const ys = chosenSeasons();
+  const contiguous = ys.every((y, i) => i === 0 || y === ys[i - 1] + 1);
+  return ys.length === 1 ? seasonLabel(ys[0])
+    : contiguous ? `${String(ys[0]).slice(2)}-${String(ys[ys.length - 1] + 1).slice(2)}`
+    : ys.map(seasonLabel).join(", ");
+}
+
+// Combine the chosen seasons into one line per player: per-game stats weighted by games,
+// advanced stats weighted by minutes, and the team of his latest chosen season
+function applySeasons() {
+  const ys = chosenSeasons();
+  for (const p of players) {
+    if (p.rookie) { if (!p.L) setLines(p); p.has = true; continue; }
+    const chosen = ys.filter((y) => p.seasons[y]).map((y) => ({ y, ...p.seasons[y] }));
+    // No games in the chosen seasons: off the board, but keep numbers for his favorites / my-team entries
+    p.has = chosen.length > 0;
+    const lines = p.has ? chosen : Object.keys(p.seasons).map(Number).sort().map((y) => ({ y, ...p.seasons[y] }));
+    const games = lines.reduce((a, l) => a + l.gp, 0);
+    p.s = S.map((_, i) => lines.reduce((a, l) => a + l.s[i] * l.gp, 0) / games);
+    p.gp = Math.round(games / lines.length);  // games per season he played
+    const latest = lines[lines.length - 1];
+    p.team25 = latest.t;
+    p.srcSeason = latest.y;
+    const adv = lines.filter((l) => l.adv);
+    const w = adv.map((l) => l.gp * l.s[ix.MIN]), tw = w.reduce((a, b) => a + b, 0);
+    p.adv = tw ? [0, 1, 2].map((i) => adv.reduce((a, l, j) => a + l.adv[i] * w[j], 0) / tw) : null;
+    setLines(p);
+  }
+}
 
 // ---------- state ----------
 const st = {
@@ -554,7 +590,8 @@ const COLS = [
 
 let last = null;
 function compute() {
-  const list = players.filter((p) => (p.rookie || p.gp >= st.minGp) && p.L.g.MIN >= st.minMin);
+  applySeasons(); computeTeams(); computeDist();
+  const list = players.filter((p) => p.has && (p.rookie || p.gp >= st.minGp) && p.L.g.MIN >= st.minMin);
   last = { list, now: rankAll(list, st.mode) };
 }
 
@@ -567,7 +604,7 @@ function passes(p) {
     (st.rookies === "all" || (st.rookies === "only") === !!p.rookie) &&
     (!st.hideTaken || (!taken.has(p.id) && !mine.has(p.id))) &&
     (!st.onlyMoved || hasMoved(p)) &&
-    (st.inj === "all" || (st.inj === "only") === !!p.src) &&
+    (st.inj === "all" || (st.inj === "only") === !!p.injured) &&
     (!st.roles.length || st.roles.includes(p.role)) &&
     (!st.onlyFav || fav.has(p.id));
 }
@@ -646,8 +683,8 @@ function render() {
   renderMine(); renderFav(); renderAdv(); renderDraft(); renderDist();
 }
 
-// The team the shown stats come from: the older season's team for injured players
-const fromTeam = (p) => (p.src ? p.team_src : p.team25);
+// The team the shown stats come from: his team in the latest chosen season he played
+const fromTeam = (p) => p.team25;
 const hasMoved = (p) => !!p.team26 && !!fromTeam(p) && fromTeam(p) !== p.team26;
 
 function nameCell(p) {
@@ -657,8 +694,10 @@ function nameCell(p) {
   const rk = p.rookie
     ? `<span class="rk" title="רוקי, נבחר במקום ${p.pick}${p.college ? " מ־" + esc(p.college) : ""}. תחזית מודל: מכללה, מקום בדראפט וסקאוטינג.${range}${p.note ? " " + esc(p.note) : ""}">R #${p.pick}</span>`
     : "";
-  const inj = p.src
-    ? `<span class="inj" title="שיחק ${p.gp_now} משחקים ב־2025-26. מוצגים נתוני ${p.src} ב־${esc(from)}, העונה המלאה האחרונה שלו.">${p.src.slice(2)}</span>`
+  // Badge when he has no games in the latest chosen season, so the numbers come from an older one
+  const newest = chosenSeasons().slice(-1)[0];
+  const inj = !p.rookie && p.srcSeason && p.srcSeason < newest
+    ? `<span class="inj" title="אין לו משחקים ב־${seasonLabel(newest)}. הנתונים מגיעים מעד ${seasonLabel(p.srcSeason)}, ב־${esc(from)}.">${seasonLabel(p.srcSeason)}</span>`
     : "";
   const team = !p.team26 ? `${rk}${inj}<span title="ללא קבוצה ל־2026-27">FA</span>`
     : hasMoved(p) ? `${rk}${inj}<span class="moved" title="עבר מ־${esc(from)} ל־${esc(p.team26)}">${esc(from)} → <b>${esc(p.team26)}</b></span>`
@@ -727,7 +766,48 @@ function renderFav() {
 }
 
 // ---------- advanced tab ----------
-const TEAM_STATS = new Map((D.teams || []).map((t) => [t.t, t]));
+let TEAM_STATS = new Map(), TEAM_ROWS = [];
+function computeTeams() {
+  const ys = chosenSeasons();
+  const acc = new Map();
+  for (const y of ys) {
+    for (const t of D.teamSeasons[y] || []) {
+      const a = acc.get(t.t) || { t: t.t, name: t.name, n: 0, PACE: 0, OFF_RATING: 0, DEF_RATING: 0, NET_RATING: 0 };
+      for (const k of ["PACE", "OFF_RATING", "DEF_RATING", "NET_RATING"]) a[k] += t[k];
+      a.n++; a.name = t.name;
+      acc.set(t.t, a);
+    }
+  }
+  TEAM_ROWS = [...acc.values()].map((a) => ({ ...a, PACE: a.PACE / a.n, OFF_RATING: a.OFF_RATING / a.n, DEF_RATING: a.DEF_RATING / a.n, NET_RATING: a.NET_RATING / a.n }));
+  TEAM_STATS = new Map(TEAM_ROWS.map((t) => [t.t, t]));
+  const range = seasonRange();
+  ADV_COLS.find((c) => c.k === "TPACE").l = `TEAM PACE ${range}`;
+  $("teamTitle").textContent = `קבוצות ${range}`;
+  $("subTitle").textContent = `מבוסס על סטטיסטיקה רשמית של ה־NBA, עונות ${range}. הדירוג מחושב מחדש עם כל סינון.`;
+}
+
+// Importance panel and each player's role (key / rotation / bench) on his 2026-27 team
+let DIST_ROWS = [];
+function computeDist() {
+  const byTeam = new Map();
+  for (const p of players) {
+    p.role = null;
+    if (!p.has || !p.team26) continue;
+    if (!byTeam.has(p.team26)) byTeam.set(p.team26, []);
+    byTeam.get(p.team26).push(p);
+  }
+  DIST_ROWS = [];
+  for (const [t, ps] of byTeam) {
+    ps.sort((a, b) => b.F.g - a.F.g);
+    ps.forEach((p, i) => { p.role = i < 3 ? "key" : i < 8 ? "rotation" : "bench"; });
+    const top = ps.slice(0, 13).map((p) => Math.max(p.F.g, 0));  // the 13-man active roster
+    const total = top.reduce((a, b) => a + b, 0);
+    if (!total) continue;
+    const share = (a, b) => top.slice(a, b).reduce((x, y) => x + y, 0) / total;
+    DIST_ROWS.push({ t, key: share(0, 3), rot: share(3, 8), bench: share(8, 13), players: ps.slice(0, 3).map((p) => p.name).join(", ") });
+  }
+  DIST_ROWS.sort((a, b) => b.key - a.key);
+}
 const ADV_COLS = [
   { k: "rank", l: "#", asc: true }, { k: "name", l: "שחקן", asc: true },
   { k: "gp", l: "GP", asc: false }, { k: "min", l: "MIN", asc: false },
@@ -808,7 +888,7 @@ function renderAdv() {
   const TCOLS = [{ k: "PACE", l: "PACE" }, { k: "OFF_RATING", l: "ORTG" }, { k: "DEF_RATING", l: "DRTG", inv: true }, { k: "NET_RATING", l: "NET" }];
   const sign = (c) => (c.inv ? -1 : 1);
   const tcol = TCOLS.find((c) => c.k === st.teamSort) || TCOLS[0];
-  const teams = [...(D.teams || [])].sort((a, b) => (st.teamAsc ? 1 : -1) * sign(tcol) * (a[tcol.k] - b[tcol.k]));
+  const teams = [...TEAM_ROWS].sort((a, b) => (st.teamAsc ? 1 : -1) * sign(tcol) * (a[tcol.k] - b[tcol.k]));
   const th = Object.fromEntries(TCOLS.map((c) => [c.k, percentileHeat(teams.map((t) => sign(c) * t[c.k]))]));
   const teamRank = rankerFor(teams.map((t) => sign(tcol) * t[tcol.k]));
   $("teamHead").innerHTML = `<th class="nosort" scope="col">${tcol.l} RANK</th><th class="nosort" scope="col">קבוצה</th>` +
@@ -817,7 +897,7 @@ function renderAdv() {
       return `<th class="${cls}" tabindex="0" data-tk="${c.k}" scope="col">${c.l}</th>`;
     }).join("");
   $("teamBody").innerHTML = teams.map((t) =>
-    `<tr><td class="rank" style="color:var(--accent)">${teamRank(sign(tcol) * t[tcol.k])}</td>` +
+    `<tr class="${st.team === t.t ? "sel-team" : ""}"><td class="rank" style="color:var(--accent)">${teamRank(sign(tcol) * t[tcol.k])}</td>` +
     `<td class="name"><span class="n">${esc(t.t || "")}</span><span class="t">${esc(t.name)}</span></td>` +
     TCOLS.map((c) => `<td style="${th[c.k](sign(c) * t[c.k])}">${c.k === "NET_RATING" && t[c.k] > 0 ? "+" : ""}${t[c.k].toFixed(1)}</td>`).join("") +
     `</tr>`).join("");
@@ -843,7 +923,7 @@ const ROLE_SEGS = [
   { role: "bench", k: "bench", cls: "seg-bench" },
 ];
 function renderDist() {
-  const all = D.dist || [];
+  const all = DIST_ROWS;
   $("distPanel").hidden = !all.length;
   const pct = (x) => `${Math.round(x * 100)}%`;
   // With roles selected, show only those segments and sort highest first by the most important one
@@ -1119,7 +1199,7 @@ document.addEventListener("click", (e) => {
     if (st.availSeasons.includes(i)) {
       if (st.availSeasons.length > 1) st.availSeasons = st.availSeasons.filter((x) => x !== i);  // keep at least one season
     } else st.availSeasons = [...st.availSeasons, i].sort();
-    return update(false);
+    return update();
   }
   if (t.dataset.role) {
     const r = t.dataset.role;
@@ -1203,7 +1283,7 @@ const SORT_OPTS = {
     { k: "PACE", l: "PACE", asc: false },
     { k: "ORTG", l: "ORTG", asc: false },
     { k: "ASTTOV", l: "AST/TOV (אסיסטים לכל איבוד)", asc: false },
-    { k: "TPACE", l: "TEAM PACE 25-26 (הקבוצה החדשה)", asc: false },
+    { k: "TPACE", l: "TEAM PACE (הקבוצה החדשה)", asc: false },
     { k: "rank", l: "דירוג פנטזי", asc: true },
     { k: "min", l: "דקות למשחק (MIN)", asc: false },
     { k: "gp", l: "משחקים (GP)", asc: false },

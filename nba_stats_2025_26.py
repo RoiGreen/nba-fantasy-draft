@@ -71,6 +71,14 @@ def fetch_previous_seasons() -> None:
                 measure_type_detailed_defense=measure,
             )
             save(df, f"players_{measure.lower()}_pergame_regular_{tag}")
+        print(f"Teams Advanced PerGame {season}")
+        df = fetch(
+            leaguedashteamstats.LeagueDashTeamStats,
+            season=season,
+            per_mode_detailed="PerGame",
+            measure_type_detailed_defense="Advanced",
+        )
+        save(df, f"teams_advanced_pergame_regular_{tag}")
 
 
 def main() -> None:
