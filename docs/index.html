@@ -1086,7 +1086,7 @@ function actions(p) {
   const cls = m ? "is-m" : t ? "is-t" : f ? "is-f" : "";
   const box = (k, text, on, off) => `<label class="amitem${off ? " off" : ""}"${off ? ` title="אי אפשר לסמן גם נלקח וגם שלי"` : ""}>` +
     `<input type="checkbox" data-am="${k}" data-id="${p.id}"${on ? " checked" : ""}${off ? " disabled" : ""}>${text}</label>`;
-  return `<details class="actpick ${cls}"${openActId === p.id ? " open" : ""}><summary aria-label="סימון ${esc(p.name)}">${label}</summary><div class="actmenu">
+  return `<details class="actpick ${cls}" data-pid="${p.id}"${openActId === p.id ? " open" : ""}><summary aria-label="סימון ${esc(p.name)}">${label}</summary><div class="actmenu">
     ${box("f", "★ מועדפים", f, false)}${box("t", "נלקח", t, m)}${box("m", "שלי", m, t)}
   </div></details>`;
 }
@@ -1841,12 +1841,36 @@ document.addEventListener("change", (e) => {
   else if (box.checked) st.tags[id] = k;
   else delete st.tags[id];
   openActId = id;
-  rebuildSets(); update(false); flushPicks();
+  // Update just this menu now; the tables are redrawn once, when the menu closes
+  refreshActMenu(box.closest("details.actpick"), id);
+  rebuildSets(); saveSettings(); flushPicks();
+  tablesStale = true;
 });
+let tablesStale = false;
+function refreshActMenu(det, id) {
+  const f = fav.has(id), tag = st.tags[id] || "", m = tag === "m", t = tag === "t";
+  det.className = `actpick ${m ? "is-m" : t ? "is-t" : f ? "is-f" : ""}`;
+  det.querySelector("summary").textContent = [f ? "★" : "", m ? "שלי" : t ? "נלקח" : ""].filter(Boolean).join(" · ") || "סימון";
+  for (const box of det.querySelectorAll("input[data-am]")) {
+    const k = box.dataset.am, off = (k === "t" && m) || (k === "m" && t);
+    box.checked = k === "f" ? f : tag === k;
+    box.disabled = off;
+    box.parentElement.classList.toggle("off", off);
+  }
+}
 document.addEventListener("click", (e) => {
   if (e.target.closest(".actmenu")) return;  // ticking inside the menu keeps it open
-  // Only one menu open at a time; a click elsewhere closes it
   const open = e.target.closest("details.actpick");
+  if (tablesStale) {
+    // Catch the tables up with the ticks, keeping open the menu that was just clicked (unless it is the one closing)
+    tablesStale = false;
+    const clicked = open ? Number(open.dataset.pid) : null;
+    openActId = clicked !== null && clicked !== openActId ? clicked : null;
+    e.preventDefault();
+    render();
+    return;
+  }
+  // Only one menu open at a time; a click elsewhere closes it
   if (!open) openActId = null;
   for (const d of document.querySelectorAll("details.actpick[open]")) if (d !== open) d.open = false;
 }, true);
