@@ -214,6 +214,25 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .tabhead { border-bottom: 1px solid var(--line); }
 .tabhead-inner { display: inline-grid; gap: 8px; max-width: 100%; }
 .tabs { display: flex; gap: 4px; }
+.dsetup { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 10px 14px; }
+.dsetup summary { cursor: pointer; font-weight: 700; }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; align-items: end; }
+.teamnames { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.teamnames input { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 100%; }
+.teamnames input.me { border-color: var(--mine); box-shadow: 0 0 0 1px var(--mine); }
+.pickbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pickbar input { flex: 1 1 220px; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.pickbar select { font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.pickbtn { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 8px 18px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .85rem; color: var(--muted); }
+.quick button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: .85rem; padding: 3px 10px; border-radius: 999px; cursor: pointer; }
+.quick button:hover { border-color: var(--accent); }
+table.dboard th, table.dboard td { font-family: var(--font-body); font-size: .82rem; white-space: nowrap; }
+table.dboard th.me, table.dboard td.me { background: color-mix(in srgb, var(--mine) 12%, transparent); }
+table.dboard td .pk { color: var(--muted); font-family: var(--font-num); margin-inline-end: 4px; }
+table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-top: 2px solid var(--line); }
+.toast { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); inset-inline: 0; margin: 0 auto; width: fit-content; max-width: 90%;
+  z-index: 60; background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-weight: 600; direction: rtl; }
 .vsnote { margin: 0; padding: 8px 12px; border-radius: 8px; font-weight: 600; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--ink); }
 .vsnote button { margin-inline-start: 8px; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
 .zhelp summary { cursor: pointer; font-weight: 700; color: var(--accent); }
@@ -263,6 +282,7 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
   </form>
 </div>
 
+<div class="toast" id="toast" role="status" hidden></div>
 <div class="wrap">
   <header class="top">
     <div>
@@ -399,17 +419,6 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <ul class="fav-list" id="favList"></ul>
       </section>
 
-      <section class="panel" aria-labelledby="hDraft">
-        <h2 id="hDraft">מצב דראפט</h2>
-        <div class="row2">
-          <div class="field"><label for="myPos">המיקום שלי בדראפט</label><input type="number" id="myPos" min="1" max="30" value="1"></div>
-          <div class="field"><span class="lbl">סדר</span><label class="check" style="padding-top:8px"><input type="checkbox" id="snake" checked> סנייק</label></div>
-        </div>
-        <div class="clock" id="clock"></div>
-        <ol class="draft-log" id="draftLog"></ol>
-        <div class="btnrow"><button class="danger" id="undoBtn" type="button">ביטול הבחירה האחרונה</button></div>
-      </section>
-
       <section class="panel" aria-labelledby="hMine">
         <h2 id="hMine">הקבוצה שלי</h2>
         <ul class="roster-list" id="mineList"></ul>
@@ -440,6 +449,7 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
           <div class="tabs" role="tablist">
             <button role="tab" id="tabBoard" data-tab="board" aria-selected="true" aria-controls="viewBoard">נתונים כלליים</button>
             <button role="tab" id="tabAdv" data-tab="adv" aria-selected="false" aria-controls="viewAdv">נתונים מתקדמים</button>
+            <button role="tab" id="tabDraft" data-tab="draft" aria-selected="false" aria-controls="viewDraft">חדר דראפט</button>
           </div>
         </div>
       </div>
@@ -474,6 +484,36 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
           <tbody id="body"></tbody>
         </table>
       </div>
+      </section>
+
+      <section class="view" id="viewDraft" role="tabpanel" aria-labelledby="tabDraft" hidden>
+        <details class="dsetup" id="draftSetup">
+          <summary>הגדרות הליגה</summary>
+          <div class="dgrid">
+            <div class="field"><label for="leagueName">שם הליגה</label><input id="leagueName" maxlength="40" placeholder="הליגה שלי"></div>
+            <div class="field"><label for="dTeams">מספר קבוצות</label><input type="number" id="dTeams" min="4" max="30"></div>
+            <div class="field"><label for="dRounds">סיבובים (שחקנים בסגל)</label><input type="number" id="dRounds" min="5" max="20"></div>
+            <div class="field"><label for="myTeam">הקבוצה שלי</label><select id="myTeam"></select></div>
+            <label class="check"><input type="checkbox" id="snake" checked> סדר סנייק</label>
+          </div>
+          <div class="field"><span class="lbl">שמות הקבוצות, לפי סדר הבחירה בסיבוב הראשון</span><div class="teamnames" id="teamNames"></div></div>
+        </details>
+        <div class="clock" id="clock"></div>
+        <div class="pickbar">
+          <input id="pickInput" list="availList" placeholder="חיפוש שחקן לבחירה…" autocomplete="off" aria-label="שחקן לבחירה">
+          <datalist id="availList"></datalist>
+          <select id="pickTeam" aria-label="הקבוצה שבוחרת"></select>
+          <button class="pickbtn" id="pickBtn" type="button">בחר</button>
+          <button class="danger" id="undoBtn" type="button">ביטול הבחירה האחרונה</button>
+        </div>
+        <div class="quick" id="quickPicks"></div>
+        <div class="tbl-wrap short">
+          <table class="dboard">
+            <thead><tr id="dbHead"></tr></thead>
+            <tbody id="dbBody"></tbody>
+            <tfoot><tr id="dbFoot"></tr></tfoot>
+          </table>
+        </div>
       </section>
 
       <section class="view" id="viewAdv" role="tabpanel" aria-labelledby="tabAdv" hidden>
@@ -597,19 +637,24 @@ function applySeasons() {
 const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 5,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
-  hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
+  hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [], leagueName: "", teamNames: [],
   sort: "zTotal", asc: false, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2], vsOpp: "",
 };
 let taken = new Set(), mine = new Set(), fav = new Set();
-// Every "taken" / "mine" click in draft order: [{ id, who: "t" | "m" }]
+// Every pick in draft order, with the team (0-based draft slot) that made it: [{ id, team }]
 let picks = [];
+const myIdx = () => Math.min(Math.max(st.myPos, 1), Math.max(st.teams, 1)) - 1;
+const teamName = (i) => (st.teamNames[i] || "").trim() || `קבוצה ${i + 1}`;
 function rebuildSets() {
-  taken = new Set(picks.filter((x) => x.who === "t").map((x) => x.id));
-  mine = new Set(picks.filter((x) => x.who === "m").map((x) => x.id));
+  taken = new Set(picks.filter((x) => x.team !== myIdx()).map((x) => x.id));
+  mine = new Set(picks.filter((x) => x.team === myIdx()).map((x) => x.id));
 }
 function picksFrom(d) {
-  if (Array.isArray(d.picks)) return d.picks.filter((x) => x && typeof x.id === "number");
-  return [...(d.taken || []).map((id) => ({ id, who: "t" })), ...(d.mine || []).map((id) => ({ id, who: "m" }))];
+  const raw = Array.isArray(d.picks) ? d.picks.filter((x) => x && typeof x.id === "number")
+    : [...(d.taken || []).map((id) => ({ id, who: "t" })), ...(d.mine || []).map((id) => ({ id, who: "m" }))];
+  // Older picks only knew "mine" / "taken": mine goes to my team, taken to the team on the clock then
+  return raw.map((x, i) => x.team != null ? { id: x.id, team: x.team }
+    : { id: x.id, team: x.who === "m" ? myIdx() : slotOf(i + 1) - 1 });
 }
 
 // Set by build_dashboard.py for the standalone website (Supabase login); null inside claude.ai
@@ -617,6 +662,7 @@ const SITE = {"supabaseUrl": "https://feaiqpajkjkykxxzjnrb.supabase.co", "supaba
 
 const SETTINGS_KEY = "draftroom.settings.v1", PICKS_KEY = "draftroom.picks.v1";
 function applySettings(s) {
+  if (s && !Array.isArray(s.teamNames)) s.teamNames = [];
   if (!s || typeof s !== "object") return;
   if (s.onlyInj && !s.inj) s.inj = "only";
   if (!Array.isArray(s.roles)) s.roles = s.role ? [s.role] : [];
@@ -1189,23 +1235,74 @@ function renderDist() {
     </button>`).join("");
 }
 
+function showToast(text) {
+  $("toast").textContent = text;
+  $("toast").hidden = false;
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => { $("toast").hidden = true; }, 4500);
+}
+const pickValue = (p, rank) => `${p.name} · ${p.team26 || "FA"}${rank ? ` · #${rank}` : ""}`;
+let PICK_LOOKUP = new Map();
+
+// Team-name inputs are rebuilt only when the number of teams changes, so typing keeps its focus
+function syncTeamNames() {
+  const box = $("teamNames");
+  const n = Math.max(st.teams, 1);
+  if (box.querySelectorAll("input").length !== n) {
+    box.innerHTML = Array.from({ length: n }, (_, i) =>
+      `<input data-tname="${i}" maxlength="24" placeholder="קבוצה ${i + 1}" aria-label="שם קבוצה ${i + 1}">`).join("");
+  }
+  box.querySelectorAll("input").forEach((el, i) => {
+    if (el !== document.activeElement) el.value = st.teamNames[i] || "";
+    el.classList.toggle("me", i === myIdx());
+  });
+  const opts = Array.from({ length: n }, (_, i) => `<option value="${i}">${esc(teamName(i))}</option>`).join("");
+  if ($("myTeam") !== document.activeElement) { $("myTeam").innerHTML = opts; $("myTeam").value = String(myIdx()); }
+  setField("leagueName", st.leagueName || "");
+  setField("dTeams", st.teams); setField("dRounds", st.roster);
+}
+
 function renderDraft() {
+  if (st.tab !== "draft") return;
+  syncTeamNames();
   const byId = new Map(players.map((p) => [p.id, p]));
-  const next = picks.length + 1;
-  const me = Math.min(st.myPos, st.teams);
+  const n = Math.max(st.teams, 1), me = myIdx();
+  const next = picks.length + 1, onClock = slotOf(next) - 1;
   let wait = 0;
-  while (slotOf(next + wait) !== me && wait < st.teams * 2) wait++;
+  while (slotOf(next + wait) - 1 !== me && wait < n * 2) wait++;
+  const league = st.leagueName ? `<span>${esc(st.leagueName)}</span>` : "";
   const clock = $("clock");
   clock.classList.toggle("you", wait === 0);
-  clock.innerHTML = wait === 0
-    ? `<span class="big">התור שלך · ${pickLabel(next)}</span><span>בחירה ${next} בסך הכול</span>`
-    : `<span class="big">על השעון: ${pickLabel(next)}</span><span>בוחר מיקום ${slotOf(next)} · עוד ${wait} בחירות עד התור שלך (${pickLabel(next + wait)})</span>`;
-  $("draftLog").innerHTML = picks.length
-    ? picks.map((x, i) => {
-        const p = byId.get(x.id);
-        return `<li class="${x.who === "m" ? "me" : ""}"><span class="no">${pickLabel(i + 1)}</span><span>${esc(p ? p.name : "?")}</span><span class="who">${x.who === "m" ? "שלי" : "נלקח"}</span></li>`;
-      }).reverse().join("")
-    : `<li class="empty" style="display:block">כל לחיצה על "נלקח" או "שלי" נרשמת כאן לפי הסדר.</li>`;
+  clock.innerHTML = `${league}<span class="big">${wait === 0 ? "התור שלך" : `על השעון: ${esc(teamName(onClock))}`} · ${pickLabel(next)}</span>` +
+    `<span>בחירה ${next} בסך הכול${wait ? ` · עוד ${wait} בחירות עד התור שלך (${pickLabel(next + wait)})` : ""}</span>`;
+
+  // Who picks next: the team on the clock unless the user chooses another
+  const teamOpts = Array.from({ length: n }, (_, i) => `<option value="${i}">${esc(teamName(i))}${i === me ? " (אני)" : ""}</option>`).join("");
+  if ($("pickTeam") !== document.activeElement) { $("pickTeam").innerHTML = teamOpts; $("pickTeam").value = String(onClock); }
+
+  // Available players, best first by the current ranking
+  const rank = last.now.rank;
+  const avail = last.list.filter((p) => !taken.has(p.id) && !mine.has(p.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id));
+  PICK_LOOKUP = new Map(avail.map((p) => [pickValue(p, rank.get(p.id)), p.id]));
+  $("availList").innerHTML = avail.slice(0, 400).map((p) => `<option value="${esc(pickValue(p, rank.get(p.id)))}"></option>`).join("");
+  $("quickPicks").innerHTML = avail.length
+    ? `<span>הבאים בדירוג:</span>` + avail.slice(0, 8).map((p) => `<button type="button" data-qpick="${p.id}" title="בחירה לקבוצה שבתיבה">#${rank.get(p.id)} ${esc(p.name)}</button>`).join("")
+    : "";
+
+  // Board: a column per team, each team's picks in the order it made them
+  const byTeam = Array.from({ length: n }, () => []);
+  picks.forEach((x, i) => { if (x.team < n) byTeam[x.team].push({ ...x, no: i + 1 }); });
+  const rounds = Math.max(st.roster, ...byTeam.map((t) => t.length), 1);
+  $("dbHead").innerHTML = `<th class="nosort">סיבוב</th>` + byTeam.map((_, i) => `<th class="nosort${i === me ? " me" : ""}">${esc(teamName(i))}</th>`).join("");
+  $("dbBody").innerHTML = Array.from({ length: rounds }, (_, r) => `<tr><td class="rank">${r + 1}</td>` + byTeam.map((t, i) => {
+    const x = t[r];
+    const pl = x && byId.get(x.id);
+    return `<td class="${i === me ? "me" : ""}">${pl ? `<span class="pk">${pickLabel(x.no)}</span>${esc(pl.name)}` : ""}</td>`;
+  }).join("") + `</tr>`).join("");
+  const zAll = last.now.z, m = st.mode;
+  const value = (id) => { const pl = byId.get(id); if (!pl) return 0; return st.fmt === "cat" ? (zAll.get(id)?.total ?? 0) : (pl.F?.[m] ?? 0); };
+  $("dbFoot").innerHTML = `<td>${st.fmt === "cat" ? "סה״כ Z" : "סה״כ FPTS"}</td>` +
+    byTeam.map((t, i) => `<td class="${i === me ? "me" : ""}">${t.reduce((a, x) => a + value(x.id), 0).toFixed(1)}</td>`).join("");
   $("undoBtn").disabled = !picks.length;
 }
 
@@ -1424,9 +1521,9 @@ function syncControls() {
   for (const b of document.querySelectorAll("[data-teamsel]")) b.setAttribute("aria-pressed", st.teamSel.includes(b.dataset.teamsel));
   $("teamSummary").textContent = !st.teamSel.length ? "כל הקבוצות"
     : st.teamSel.length <= 4 ? st.teamSel.map((t) => t === "-" ? "FA" : t).join(", ") : `${st.teamSel.length} קבוצות נבחרו`;
-  setField("myPos", st.myPos); $("snake").checked = st.snake;
+  $("snake").checked = st.snake;
   for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", b.dataset.tab === st.tab);
-  $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv";
+  $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv"; $("viewDraft").hidden = st.tab !== "draft";
   $("onlyFav").checked = st.onlyFav;
   for (const b of document.querySelectorAll("[data-avs]")) b.setAttribute("aria-pressed", st.availSeasons.includes(Number(b.dataset.avs)));
   // Collapsed list shows the chosen seasons, newest first
@@ -1505,11 +1602,19 @@ document.addEventListener("click", (e) => {
     const id = Number(t.dataset.id);
     if (t.dataset.a === "fav") { fav.has(id) ? fav.delete(id) : fav.add(id); }
     else {
-      const who = t.dataset.a === "mine" ? "m" : "t";
-      const i = picks.findIndex((x) => x.id === id);
-      if (i < 0) picks.push({ id, who });            // new pick goes to the end of the order
-      else if (picks[i].who === who) picks.splice(i, 1); // clicking again removes it
-      else picks[i] = { id, who };                    // switching keeps its place in the order
+      const i = picks.findIndex((x) => x.id === id), me = myIdx();
+      const onClock = slotOf(picks.length + 1) - 1;
+      if (t.dataset.a === "mine") {
+        if (i >= 0 && picks[i].team === me) picks.splice(i, 1);  // clicking again removes it
+        else if (i >= 0) picks[i] = { id, team: me };              // switching keeps its place in the order
+        else picks.push({ id, team: me });
+      } else if (i >= 0 && picks[i].team !== me) {
+        picks.splice(i, 1);
+      } else {
+        // "taken" goes to the team on the clock; on my own turn, that would be me
+        if (onClock === me) return showToast("עכשיו התור שלך: \"שלי\" בוחר לקבוצה שלך. לבחירה של קבוצה אחרת, השתמש בחדר הדראפט.");
+        if (i >= 0) picks[i] = { id, team: onClock }; else picks.push({ id, team: onClock });
+      }
       rebuildSets();
     }
     render(); flushPicks();
@@ -1570,7 +1675,7 @@ const SORT_OPTS = {
 function fillSort() {
   const adv = st.tab === "adv";
   const cur = adv ? st.advSort : st.sort, asc = adv ? st.advAsc : st.asc;
-  const opts = SORT_OPTS[st.tab];
+  const opts = SORT_OPTS[st.tab === "adv" ? "adv" : "board"];
   const known = opts.some((o) => o.k === cur);
   $("sortBy").innerHTML = (known ? "" : `<option value="${esc(cur)}">לפי עמודה בטבלה</option>`) +
     opts.map((o) => `<option value="${o.k}">${esc(o.l)}</option>`).join("");
@@ -1579,7 +1684,7 @@ function fillSort() {
   $("sortDir").setAttribute("aria-label", asc ? "סדר עולה, לחץ להפוך" : "סדר יורד, לחץ להפוך");
 }
 $("sortBy").addEventListener("change", (e) => {
-  const o = SORT_OPTS[st.tab].find((x) => x.k === e.target.value);
+  const o = SORT_OPTS[st.tab === "adv" ? "adv" : "board"].find((x) => x.k === e.target.value);
   if (!o) return;
   if (st.tab === "adv") { st.advSort = o.k; st.advAsc = o.asc; } else { st.sort = o.k; st.asc = o.asc; }
   update(false);
@@ -1623,7 +1728,32 @@ $("catFilters").addEventListener("click", (e) => {
   syncCatFilters(true);
   update(false);
 });
-num("myPos", "myPos", 1, 30, false);
+num("dTeams", "teams", 4, 30);
+num("dRounds", "roster", 5, 20);
+$("myTeam").addEventListener("change", (e) => { st.myPos = Number(e.target.value) + 1; rebuildSets(); update(false); flushPicks(); });
+$("leagueName").addEventListener("input", (e) => { st.leagueName = e.target.value; update(false); });
+$("teamNames").addEventListener("input", (e) => {
+  const i = e.target.dataset.tname;
+  if (i == null) return;
+  st.teamNames[Number(i)] = e.target.value;
+  update(false);
+});
+function makePick(id, team) {
+  if (!id || picks.some((x) => x.id === id)) return;
+  picks.push({ id, team });
+  rebuildSets(); render(); flushPicks();
+}
+$("pickBtn").addEventListener("click", () => {
+  const id = PICK_LOOKUP.get($("pickInput").value);
+  if (!id) return showToast("בחר שחקן מהרשימה שנפתחת בזמן ההקלדה.");
+  makePick(id, Number($("pickTeam").value));
+  $("pickInput").value = "";
+});
+$("pickInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("pickBtn").click(); } });
+$("quickPicks").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-qpick]");
+  if (b) makePick(Number(b.dataset.qpick), Number($("pickTeam").value));
+});
 $("snake").addEventListener("change", (e) => { st.snake = e.target.checked; update(false); });
 $("undoBtn").addEventListener("click", () => {
   if (!picks.length) return;
