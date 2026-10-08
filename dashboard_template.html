@@ -317,9 +317,9 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <div class="field" id="puntField">
           <span class="lbl">ויתור על קטגוריות (Punt)</span>
           <div class="chips" id="puntChips"></div>
-          <p class="hint">קטגוריה מסומנת לא נספרת בערך הכולל.</p>
+          <p class="hint">קטגוריה מסומנת לא נספרת: בליגת קטגוריות היא יוצאת מה־Z, ובליגת נקודות הנקודות שלה לא נכנסות ל־FPTS.</p>
         </div>
-        <p class="hint" id="ptsHint" hidden>ניקוד ESPN: נקודה 1, שלשה 1, קליעה 2, זריקה ‎-1, עונשין 1, ניסיון עונשין ‎-1, ריבאונד 1, אסיסט 2, חטיפה 4, חסימה 4, איבוד ‎-2.</p>
+        <p class="hint" id="ptsHint" hidden>ניקוד FPTS: נקודה 1, שלשה 1, קליעה 2, זריקה ‎-1, עונשין 1, ניסיון עונשין ‎-1, ריבאונד 1, אסיסט 2, חטיפה 4, חסימה 4, איבוד ‎-2.</p>
       </section>
 
       <section class="panel" aria-labelledby="hFilt">
@@ -516,7 +516,13 @@ function line(arr, mode) {
   o.FT_PCT = arr[ix.FTA] ? arr[ix.FTM] / arr[ix.FTA] : 0;
   return o;
 }
-const fpts = (o) => Object.entries(PTSW).reduce((a, [k, w]) => a + o[k] * w, 0);
+// Fantasy points; a punted category's points drop out (FG% / FT% take their makes and attempts with them)
+const PUNT_TERMS = { PTS: ["PTS"], REB: ["REB"], AST: ["AST"], STL: ["STL"], BLK: ["BLK"], FG3M: ["FG3M"],
+  TOV: ["TOV"], FG_PCT: ["FGM", "FGA"], FT_PCT: ["FTM", "FTA"] };
+const fpts = (o) => {
+  const off = new Set([...st.punts].flatMap((k) => PUNT_TERMS[k] || []));
+  return Object.entries(PTSW).reduce((a, [k, w]) => a + (off.has(k) ? 0 : o[k] * w), 0);
+};
 
 const SEASONS = D.seasons;  // start years, e.g. [2023, 2024, 2025]
 const seasonLabel = (y) => y === D.preseason ? "26-27 Pre" : `${String(y).slice(2)}-${String(y + 1).slice(2)}`;
@@ -770,7 +776,7 @@ function render() {
   $("head").innerHTML = (statLabel ? `<th class="nosort" scope="col">${esc(statLabel)} Rank</th>` : "") + COLS.map((c) => {
     const label = c.k === "rank" ? (m === "g" ? "Rank" : "Rank 36 MIN") : c.l;
     const cls = [st.sort === c.k ? "sorted" : "", st.sort === c.k && st.asc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : "",
-                 c.cat && st.fmt === "cat" && st.punts.has(c.k) ? "punted" : ""].join(" ");
+                 c.cat && st.punts.has(c.k) ? "punted" : ""].join(" ");
     if (c.k === "rank" && posR) return posTh(posR);  // one position picked: show only the rank within it
     const tip = c.k === "zTotal" ? ' title="כמה השחקן בולט לעומת השחקן הממוצע שייבחר בליגה, בסכום 9 הקטגוריות. 0 = ממוצע, ‎+1 בקטגוריה = טוב משמעותית"' : "";
     return `<th class="${cls}"${tip} ${c.nosort ? "" : `tabindex="0" data-k="${c.k}"`} scope="col">${esc(label)}</th>`;
@@ -781,7 +787,7 @@ function render() {
     const o = p.L[m];
     const cats = CATS.map((c) => {
       const v = c.k.endsWith("_PCT") ? fmt3(o[c.k]) : fmt1(o[c.k]);
-      const punted = st.fmt === "cat" && st.punts.has(c.k) ? " punted" : "";
+      const punted = st.punts.has(c.k) ? " punted" : "";
       return `<td class="cat${punted}" style="${heat(z.z[c.k])}">${v}</td>`;
     }).join("");
     return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
@@ -1366,7 +1372,7 @@ function syncControls() {
   for (const b of document.querySelectorAll("[data-mode]")) b.setAttribute("aria-pressed", b.dataset.mode === st.mode);
   for (const b of document.querySelectorAll("[data-pos]")) b.setAttribute("aria-pressed", st.pos.has(b.dataset.pos));
   for (const b of document.querySelectorAll("[data-punt]")) b.setAttribute("aria-pressed", st.punts.has(b.dataset.punt));
-  $("puntField").hidden = st.fmt !== "cat"; $("ptsHint").hidden = st.fmt !== "pts";
+  $("ptsHint").hidden = st.fmt !== "pts";  // Punt stays visible in both formats
   setField("teams", st.teams); setField("roster", st.roster); setField("q", st.q);
   $("minGp").value = st.minGp; $("minGpOut").textContent = st.minGp;
   $("minMin").value = st.minMin; $("minMinOut").textContent = st.minMin;
