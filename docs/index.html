@@ -392,7 +392,8 @@ table.cmpt td.lbl { font-family: var(--font-num); font-weight: 700; text-align: 
 .cmpkey { display: flex; gap: 14px; font-size: .82rem; color: var(--muted); }
 .cmpkey i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-inline-end: 5px; vertical-align: -1px; }
 .tipbox { position: fixed; z-index: 50; max-width: 280px; padding: 7px 10px; border-radius: 8px; background: var(--ink); color: var(--surface);
-  font-size: .82rem; font-weight: 500; line-height: 1.45; pointer-events: none; box-shadow: 0 4px 14px rgb(0 0 0 / .18); }
+  font-size: .82rem; font-weight: 500; line-height: 1.45; pointer-events: none; box-shadow: 0 4px 14px rgb(0 0 0 / .18); white-space: pre-line; direction: rtl; }
+.injpill[data-tip] { cursor: help; }
 th[data-tip] { text-decoration: underline dotted color-mix(in srgb, var(--muted) 60%, transparent); text-underline-offset: 4px; }
 table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-top: 2px solid var(--line); }
 .toast { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); inset-inline: 0; margin: 0 auto; width: fit-content; max-width: 90%;
@@ -1205,12 +1206,35 @@ const INJ_LOOK = {
   GTD: { cls: "gtd", text: "GTD 50%" }, PROBABLE: { cls: "gtd", text: "PROB 75%" },
   QUESTIONABLE: { cls: "gtd", text: "Q 50%" }, DOUBTFUL: { cls: "gtd", text: "D 25%" },
 };
+// ESPN's injury text ("Ankle Sprain", "Knee Surgery") in Hebrew: the kind of injury, then where
+const INJ_WHOLE = { "Rest": "מנוחה", "Undisclosed": "לא פורסם", "Illness": "מחלה", "Not Injury Related": "לא קשור לפציעה",
+  "Personal": "סיבה אישית", "Concussion": "זעזוע מוח", "Lower Body": "פלג גוף תחתון", "Upper Body": "פלג גוף עליון" };
+const INJ_PART = { Ankle: "קרסול", Knee: "ברך", Hamstring: "המסטרינג", Back: "גב", Hip: "ירך", Calf: "שוק", Foot: "כף הרגל",
+  Achilles: "אכילס", Shoulder: "כתף", Lips: "שפתיים", Nose: "אף", Leg: "רגל", "Lower Leg": "שוק", Toe: "בוהן", Finger: "אצבע",
+  Heel: "עקב", Head: "ראש", Groin: "מפשעה", Neck: "צוואר", Wrist: "שורש כף היד", Hand: "יד", Elbow: "מרפק", Thumb: "אגודל",
+  Quadriceps: "ארבע ראשי", Quad: "ארבע ראשי", Abdominal: "בטן", Oblique: "שרירי הבטן", Eye: "עין", Chest: "חזה", Rib: "צלע",
+  Thigh: "ירך", Shin: "שוק", Face: "פנים", Jaw: "לסת", Pelvis: "אגן", Forearm: "אמה", Arm: "זרוע", Spine: "עמוד השדרה" };
+const INJ_KIND = { Surgery: "ניתוח", Sprain: "נקע", Strain: "מתיחה", Bruise: "חבלה", Contusion: "חבלה", Fracture: "שבר",
+  Soreness: "כאבים", Inflammation: "דלקת", Laceration: "חתך", Ruptured: "קרע", Rupture: "קרע", Tear: "קרע", Torn: "קרע",
+  Tendinitis: "דלקת בגיד", Tendinopathy: "דלקת בגיד", Dislocation: "פריקה", Spasms: "עוויתות", Tightness: "נוקשות", Injury: "פציעה" };
+function injuryHe(text) {
+  if (!text) return null;
+  if (INJ_WHOLE[text]) return INJ_WHOLE[text];
+  const words = text.split(" ");
+  for (let n = words.length - 1; n >= 1; n--) {
+    const part = INJ_PART[words.slice(0, n).join(" ")], kind = words.slice(n).join(" ");
+    if (part && INJ_KIND[kind]) return `${INJ_KIND[kind]} ב${part}`;
+  }
+  return INJ_PART[text] ? `פציעה ב${INJ_PART[text]}` : text;  // unknown wording stays as ESPN wrote it
+}
 function injuryPill(p) {
   if (!p.hurt) return "";
   const look = INJ_LOOK[p.hurt.s] || INJ_LOOK.GTD;
   const ret = p.hurt.ret ? new Date(p.hurt.ret).toLocaleDateString("he-IL") : null;
-  const title = [p.hurt.inj, ret ? `חזרה משוערת: ${ret}` : null, p.hurt.note].filter(Boolean).join(" · ");
-  return `<span class="injpill ${look.cls}" title="${esc(title)}">${look.text}</span>`;
+  // Hover or tap: only the reason and the expected return
+  const tip = `סיבה: ${injuryHe(p.hurt.inj) || "לא פורסם"}
+חזרה משוערת: ${ret || "לא ידוע"}`;
+  return `<span class="injpill ${look.cls}" tabindex="0" data-tip="${esc(tip)}">${look.text}</span>`;
 }
 
 // ---------- this fantasy week's games (Monday to Sunday, NBA game days in US Eastern time) ----------
