@@ -144,6 +144,7 @@ tr.is-mine td.name .n { color: var(--mine); }
 .actpick.is-m summary { border-color: var(--mine); background: color-mix(in srgb, var(--mine) 14%, var(--surface)); color: var(--ink); }
 .actpick.is-t summary { border-color: var(--ink); background: var(--sunk); color: var(--ink); }
 /* The open menu sits above every other row's sticky cell and opens into the table */
+td.acts { position: relative; }
 td.acts:has(details[open]) { z-index: 20; }
 .actmenu { position: absolute; top: calc(100% + 4px); left: 0; right: auto; z-index: 21; min-width: 9.5em; display: grid; gap: 2px; padding: 4px;
   background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.28); }
@@ -158,8 +159,6 @@ td.acts:has(details[open]) { z-index: 20; }
 .actsel.is-f { border-color: var(--fav); color: var(--ink); }
 .actsel.is-m { border-color: var(--mine); background: color-mix(in srgb, var(--mine) 14%, var(--surface)); color: var(--ink); }
 .actsel.is-t { border-color: var(--ink); background: var(--sunk); color: var(--ink); }
-td.acts, th.acts { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 6px 0 6px -6px rgba(0,0,0,.25); }
-thead th.acts { z-index: 3; background: var(--sunk); }
 .act button { font: inherit; font-family: var(--font-body); font-size: .8rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
 .act button.on-mine { background: var(--mine); border-color: var(--mine); color: #fff; }
 .act button.on-taken { background: var(--ink); border-color: var(--ink); color: var(--surface); }
