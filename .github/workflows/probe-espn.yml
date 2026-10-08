@@ -1,0 +1,17 @@
+# One-off check: can GitHub's servers read ESPN's injury list?
+name: Probe ESPN
+
+on:
+  push:
+    paths:
+      - .github/workflows/probe-espn.yml
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: ESPN injuries
+        run: |
+          curl -sf -A "Mozilla/5.0" -o inj.json -w "%{http_code} %{size_download}\n" https://site.api.espn.com/apis/site/v2/sports/basketball/nba/injuries
+          python3 -c "import json; d=json.load(open('inj.json')); print(sum(len(t['injuries']) for t in d['injuries']), 'players')"
