@@ -180,8 +180,10 @@ tr.is-fav td.name .n::before { content: "★ "; color: var(--fav); }
 .tag.mine { background: var(--mine); color: #fff; }
 .tag.avail { background: color-mix(in srgb, var(--pos) 20%, transparent); color: var(--pos); }
 
-.clock { border-radius: 8px; padding: 10px 12px; background: var(--sunk); display: grid; gap: 2px; }
-.clock .big { font-family: var(--font-num); font-weight: 700; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.dconsole { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.clock { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; padding: 5px 10px; border-radius: 6px; background: var(--sunk);
+  font-size: .82rem; color: var(--muted); }
+.clock .big { font-family: var(--font-num); font-weight: 700; font-size: 1rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 .clock.you { background: color-mix(in srgb, var(--mine) 18%, transparent); }
 .clock.you .big { color: var(--mine); }
 .draft-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; max-height: 260px; overflow-y: auto; }
@@ -249,9 +251,12 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .teamnames input.me { border-color: var(--mine); box-shadow: 0 0 0 1px var(--mine); }
 .pickbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .pickbar input { flex: 1 1 220px; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
-.pickbar select { font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.pickbar select { font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); width: auto; flex: 0 1 170px; }
+.pickbar .danger { padding: 7px 10px; }
+.pickrow2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pickrow2 .pickfrom { flex: 1 1 420px; }
 .pickbtn { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 8px 18px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
-.pickfrom { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+.pickfrom { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
 .pickfrom select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); width: 100%; }
 .rollers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
 .roller { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
@@ -283,6 +288,8 @@ table.dboard td .dn { font-weight: 700; }
 .autobar button, .pickedit button { font: inherit; font-size: .85rem; font-weight: 600; padding: 6px 12px; border-radius: 8px;
   border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
 .autobar button:hover, .pickedit button:hover { border-color: var(--accent); color: var(--accent); }
+.autobar { gap: 6px; }
+.autobar button { padding: 6px 10px; font-size: .8rem; }
 .dhint { margin: 0; font-size: .8rem; color: var(--muted); }
 .pickedit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid var(--accent);
   border-radius: 10px; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
@@ -564,25 +571,28 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
           </div>
           <div class="field"><span class="lbl">שמות הקבוצות, לפי סדר הבחירה בסיבוב הראשון</span><div class="teamnames" id="teamNames"></div></div>
         </details>
-        <div class="clock" id="clock"></div>
-        <div class="pickbar">
-          <input id="pickInput" list="availList" placeholder="חיפוש שחקן לבחירה…" autocomplete="off" aria-label="שחקן לבחירה">
-          <datalist id="availList"></datalist>
-          <select id="pickTeam" aria-label="הקבוצה שבוחרת"></select>
-          <button class="pickbtn" id="pickBtn" type="button">בחר</button>
-          <button class="danger" id="undoBtn" type="button">ביטול הבחירה האחרונה</button>
+        <div class="dconsole">
+          <div class="clock" id="clock"></div>
+          <div class="pickbar">
+            <input id="pickInput" list="availList" placeholder="חיפוש שחקן לבחירה…" autocomplete="off" aria-label="שחקן לבחירה">
+            <datalist id="availList"></datalist>
+            <select id="pickTeam" aria-label="הקבוצה שבוחרת"></select>
+            <button class="pickbtn" id="pickBtn" type="button">בחר</button>
+            <button class="danger" id="undoBtn" type="button" title="ביטול הבחירה האחרונה">↶ ביטול</button>
+          </div>
+          <div class="pickrow2">
+            <div class="pickfrom" id="quickPicks">
+              <select id="favPick" aria-label="בחירה מהמועדפים שלי"></select>
+              <select id="rankPick" aria-label="בחירה לפי דירוג"></select>
+            </div>
+            <div class="autobar" role="group" aria-label="בחירה אוטומטית" title="בחירה אוטומטית: השחקן הזמין הכי גבוה בדירוג">
+              <span class="lbl">אוטומטי:</span>
+              <button type="button" data-auto="next">הבאה</button>
+              <button type="button" data-auto="mine">עד התור שלי</button>
+              <button type="button" data-auto="all">כל הדראפט</button>
+            </div>
+          </div>
         </div>
-        <div class="autobar" role="group" aria-label="בחירה אוטומטית">
-          <span class="lbl">בחירה אוטומטית (השחקן הזמין הכי גבוה בדירוג):</span>
-          <button type="button" data-auto="next">הבחירה הבאה</button>
-          <button type="button" data-auto="mine">עד התור שלי</button>
-          <button type="button" data-auto="all">כל הדראפט</button>
-        </div>
-        <div class="pickfrom" id="quickPicks">
-          <select id="favPick" aria-label="בחירה מהמועדפים שלי"></select>
-          <select id="rankPick" aria-label="בחירה לפי דירוג"></select>
-        </div>
-        <p class="dhint">לחיצה על משבצת בלוח פותחת עריכה: החלפת שחקן, העברה לקבוצה אחרת או הסרה. משבצת ריקה מוסיפה שחקן לקבוצה.</p>
         <div class="pickedit" id="pickEdit" hidden></div>
         <div class="tbl-wrap short">
           <table class="dboard">
