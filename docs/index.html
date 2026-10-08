@@ -319,6 +319,20 @@ table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px
 .cmpchips button { border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; }
 .cmpchips button:hover { color: var(--neg); }
 .cmpchips .empty { display: block; background: none; color: var(--muted); }
+.cmpside h3 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.foldbtn { border: 0; background: none; color: var(--muted); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; padding: 0; }
+.foldbtn:hover { color: var(--ink); }
+.cmpchips .swbtn { font-size: .78rem; font-weight: 600; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; background: var(--surface); color: var(--muted); }
+.cmpchips .swbtn:hover { color: var(--accent); border-color: var(--accent); }
+.cmpchips li.swapped { background: color-mix(in srgb, var(--pos) 14%, var(--sunk)); }
+.cmpchips li.swapped s, .cmpchips li.swapping s { color: var(--muted); font-weight: 600; }
+.cmpchips li.swapping { grid-template-columns: auto minmax(0, 1fr) auto; }
+.cmpchips li.swapping input { min-width: 0; font: inherit; font-size: .85rem; padding: 3px 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.cmpdelta { border: 1px dashed var(--line); border-radius: 8px; padding: 8px; display: grid; gap: 6px; font-size: .85rem; }
+.cmpdelta .dh { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.cmpdelta .dh button { border: 0; background: none; color: var(--muted); font: inherit; font-size: .8rem; cursor: pointer; text-decoration: underline; }
+.cmpdelta .dv { display: flex; flex-wrap: wrap; gap: 4px 12px; font-family: var(--font-num); font-weight: 700; }
+.cmpdelta .up { color: var(--pos); } .cmpdelta .dn { color: var(--neg); } .cmpdelta .punted { opacity: .4; text-decoration: line-through; }
 #cmpOut { display: grid; gap: 12px; }
 .cmpsum { display: flex; flex-wrap: wrap; gap: 8px; }
 .cmpsum .card { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 8px 14px; display: grid; gap: 2px; min-width: 150px; }
@@ -683,14 +697,17 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
             <h3 id="cmpHA"></h3>
             <div class="cmppick" id="cmpPickA"></div>
             <ul class="cmpchips" id="cmpChipsA"></ul>
+            <div class="cmpdelta" id="cmpDeltaA" hidden></div>
           </div>
           <button type="button" class="cmpswap" id="cmpSwap" title="החלפת הצדדים" aria-label="החלפת הצדדים">⇄</button>
           <div class="cmpside sb" id="cmpSideB">
             <h3 id="cmpHB"></h3>
             <div class="cmppick" id="cmpPickB"></div>
             <ul class="cmpchips" id="cmpChipsB"></ul>
+            <div class="cmpdelta" id="cmpDeltaB" hidden></div>
           </div>
         </div>
+        <datalist id="cmpSwList"></datalist>
         <div id="cmpOut"></div>
       </section>
 
@@ -813,7 +830,7 @@ const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 5,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [], leagueName: "", teamNames: [], tags: {}, tagsMigrated: false,
-  cmp: { mode: "players", a: [], b: [], ta: 0, tb: 1, chart: "val" },
+  cmp: { mode: "players", a: [], b: [], ta: 0, tb: 1, chart: "val", sw: { a: [], b: [] }, fold: { a: false, b: false } },
   sort: "zTotal", asc: false, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2], vsOpp: "",
 };
 // taken / mine = everything that marks a player as gone or on my team (table tags + draft picks);
@@ -879,7 +896,11 @@ function applySettings(s) {
   delete s.onlySleepers;
   const cm = s.cmp;
   if (!cm || !["players", "teams", "trade", "pickup"].includes(cm.mode) || !Array.isArray(cm.a) || !Array.isArray(cm.b)) delete s.cmp;
-  else s.cmp = { ta: 0, tb: 1, chart: "val", ...cm };
+  else {
+    s.cmp = { ta: 0, tb: 1, chart: "val", ...cm };
+    if (!s.cmp.sw || !Array.isArray(s.cmp.sw.a) || !Array.isArray(s.cmp.sw.b)) s.cmp.sw = { a: [], b: [] };
+    if (!s.cmp.fold || typeof s.cmp.fold !== "object") s.cmp.fold = { a: false, b: false };
+  }
   // Saved picks of the old Guard / Forward / Center filter are dropped
   Object.assign(st, s, { punts: new Set(s.punts || []), pos: new Set((s.pos || []).filter((x) => POSITIONS.includes(x))) });
 }
@@ -1591,7 +1612,7 @@ function zOf(p) {
   if (!last.zx.has(p.id)) last.zx.set(p.id, zScores([p], last.now.pool, st.mode).get(p.id));
   return last.zx.get(p.id);
 }
-function cmpPlayers(side) {
+function cmpBase(side) {
   const c = st.cmp;
   if (c.mode === "teams") {
     const t = side === "a" ? c.ta : c.tb;
@@ -1599,6 +1620,15 @@ function cmpPlayers(side) {
   }
   return c[side].map((id) => PLAYER_BY_ID.get(id)).filter(Boolean);
 }
+// A team's roster after the swaps tried on it (drop one player, put another in his place); the draft itself is untouched
+function cmpPlayers(side) {
+  const base = cmpBase(side);
+  if (st.cmp.mode !== "teams") return base;
+  const sw = new Map(st.cmp.sw[side]);
+  return base.map((p) => (sw.has(p.id) ? PLAYER_BY_ID.get(sw.get(p.id)) : p)).filter(Boolean);
+}
+let cmpSwapping = null;  // {side, id}: the player whose replacement is being picked
+let CMP_SW_LOOKUP = new Map();
 // Who can be added on each side; for a pickup, the player added comes from those not drafted
 function cmpPool(side) {
   const all = players.filter((p) => p.L);
@@ -1636,7 +1666,9 @@ function cmpTotals(list) {
 function renderCmpSide(side) {
   const c = st.cmp, M = CMP_MODES[c.mode], S2 = side.toUpperCase();
   const box = $("cmpPick" + S2);
-  $("cmpH" + S2).textContent = M[side];
+  const folded = !!c.fold[side], count = cmpPlayers(side).length;
+  $("cmpH" + S2).innerHTML = `<span>${M[side]}</span>` + (count > 1 || folded
+    ? `<button type="button" class="foldbtn" data-cmpfold="${side}">${folded ? `▸ הצג את השחקנים (${count})` : "▾ צמצום"}</button>` : "");
   const rank = last.now.rank;
   if (M.team) {
     const n = Math.max(st.teams, 1);
@@ -1656,13 +1688,55 @@ function renderCmpSide(side) {
     CMP_LOOKUP[side] = new Map(pool.map((p) => [pickValue(p, rank.get(p.id)), p.id]));
     $("cmpList" + S2).innerHTML = pool.slice(0, 500).map((p) => `<option value="${esc(pickValue(p, rank.get(p.id)))}"></option>`).join("");
   }
-  const list = cmpPlayers(side);
-  $("cmpChips" + S2).innerHTML = list.map((p) => {
-    const z = zOf(p);
-    return `<li><span class="nm">${esc(p.name)}<small>${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</small></span>` +
-      `<span class="zv">${st.fmt === "cat" ? `Z ${z ? z.total.toFixed(2) : "–"}` : `${fmt1(p.F[st.mode])} FPTS`}</span>` +
-      (M.team ? "<span></span>" : `<button type="button" data-cmprm="${side}:${p.id}" aria-label="הסרת ${esc(p.name)}" title="הסרה">✕</button>`) + `</li>`;
-  }).join("") || `<li class="empty">${M.team ? "אין עדיין שחקנים בקבוצה הזו בחדר הדראפט." : "עוד לא נבחר שחקן."}</li>`;
+  const val = (p) => { const z = zOf(p); return st.fmt === "cat" ? `Z ${z ? z.total.toFixed(2) : "–"}` : `${fmt1(p.F[st.mode])} FPTS`; };
+  const who = (p) => `${esc(p.name)}<small>${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</small>`;
+  const chips = $("cmpChips" + S2);
+  chips.hidden = folded;
+  if (!folded) {
+    if (M.team) {
+      const sw = new Map(c.sw[side]);
+      chips.innerHTML = cmpBase(side).map((p) => {
+        if (sw.has(p.id)) {
+          const q = PLAYER_BY_ID.get(sw.get(p.id));
+          return `<li class="swapped"><span class="nm"><s>${esc(p.name)}</s> ← ${who(q)}</span><span class="zv">${val(q)}</span>` +
+            `<button type="button" data-cmpundo="${side}:${p.id}" title="ביטול החילוף" aria-label="ביטול החילוף של ${esc(p.name)}">↶</button></li>`;
+        }
+        if (cmpSwapping && cmpSwapping.side === side && cmpSwapping.id === p.id) {
+          return `<li class="swapping"><span class="nm"><s>${esc(p.name)}</s> ←</span>` +
+            `<input data-cmpswin="${side}" list="cmpSwList" placeholder="שחקן במקומו…" autocomplete="off" aria-label="שחקן במקום ${esc(p.name)}">` +
+            `<button type="button" data-cmpswcancel="1" title="ביטול" aria-label="ביטול">✕</button></li>`;
+        }
+        return `<li><span class="nm">${who(p)}</span><span class="zv">${val(p)}</span>` +
+          `<button type="button" class="swbtn" data-cmpsw="${side}:${p.id}" title="להוריד אותו ולשים מישהו אחר במקומו">החלף</button></li>`;
+      }).join("") || `<li class="empty">אין עדיין שחקנים בקבוצה הזו בחדר הדראפט.</li>`;
+    } else {
+      chips.innerHTML = cmpPlayers(side).map((p) => `<li><span class="nm">${who(p)}</span><span class="zv">${val(p)}</span>` +
+        `<button type="button" data-cmprm="${side}:${p.id}" aria-label="הסרת ${esc(p.name)}" title="הסרה">✕</button></li>`).join("")
+        || `<li class="empty">עוד לא נבחר שחקן.</li>`;
+    }
+  }
+  // What the swaps change for this team: after minus before
+  const dl = $("cmpDelta" + S2);
+  dl.hidden = !(M.team && c.sw[side].length);
+  if (!dl.hidden) {
+    const B0 = cmpTotals(cmpBase(side)), B1 = cmpTotals(cmpPlayers(side));
+    const item = (l, d, f, low, punted) => {
+      const cls = punted || Math.abs(d) < 1e-9 ? "" : (d > 0) !== !!low ? "up" : "dn";
+      return `<span class="${cls}${punted ? " punted" : ""}">${l} ${d >= 0 ? "+" : "−"}${f(Math.abs(d))}</span>`;
+    };
+    dl.innerHTML = `<div class="dh"><b>השינוי בעקבות ${c.sw[side].length === 1 ? "החילוף" : `${c.sw[side].length} החילופים`}</b>` +
+      `<button type="button" data-cmpswreset="${side}">ביטול כל החילופים</button></div><div class="dv">` +
+      CATS.map((k) => item(k.l, B1[k.k] - B0[k.k], k.k.endsWith("_PCT") ? fmt3 : fmt1, k.k === "TOV", st.punts.has(k.k))).join("") +
+      item("Z", B1.Z - B0.Z, (v) => v.toFixed(2)) + item("FPTS", B1.FPTS - B0.FPTS, fmt1) + `</div>`;
+  }
+  if (cmpSwapping && cmpSwapping.side === side) {
+    // Anyone not already on either of the two teams compared can come in
+    const on = new Set([...cmpPlayers("a"), ...cmpPlayers("b")].map((p) => p.id));
+    const pool = players.filter((p) => p.L && !on.has(p.id)).sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
+    CMP_SW_LOOKUP = new Map(pool.map((p) => [pickValue(p, rank.get(p.id)), p.id]));
+    $("cmpSwList").innerHTML = pool.slice(0, 500).map((p) => `<option value="${esc(pickValue(p, rank.get(p.id)))}"></option>`).join("");
+    chips.querySelector("[data-cmpswin]")?.focus();
+  }
 }
 
 function cmpBars(rows, A, B, kind) {
@@ -1780,7 +1854,15 @@ $("viewCmp").addEventListener("click", (e) => {
     const [side, id] = t.dataset.cmprm.split(":");
     c[side] = c[side].filter((x) => x !== Number(id));
   } else if (t.dataset.cmpchart) c.chart = t.dataset.cmpchart;
-  else if (t.id === "cmpSwap") { [c.a, c.b] = [c.b, c.a]; [c.ta, c.tb] = [c.tb, c.ta]; }
+  else if (t.id === "cmpSwap") {
+    [c.a, c.b] = [c.b, c.a]; [c.ta, c.tb] = [c.tb, c.ta];
+    c.sw = { a: c.sw.b, b: c.sw.a }; c.fold = { a: c.fold.b, b: c.fold.a };
+  }
+  else if (t.dataset.cmpfold) c.fold[t.dataset.cmpfold] = !c.fold[t.dataset.cmpfold];
+  else if (t.dataset.cmpsw) { const [side, id] = t.dataset.cmpsw.split(":"); cmpSwapping = { side, id: Number(id) }; return renderCmp(); }
+  else if (t.dataset.cmpswcancel) { cmpSwapping = null; return renderCmp(); }
+  else if (t.dataset.cmpundo) { const [side, id] = t.dataset.cmpundo.split(":"); c.sw[side] = c.sw[side].filter(([o]) => o !== Number(id)); }
+  else if (t.dataset.cmpswreset) c.sw[t.dataset.cmpswreset] = [];
   else return;
   saveSettings(); renderCmp();
 });
@@ -1788,16 +1870,26 @@ $("viewCmp").addEventListener("change", (e) => {
   const sel = e.target.closest("[data-cmpteam]");
   if (!sel) return;
   st.cmp[sel.dataset.cmpteam === "a" ? "ta" : "tb"] = Number(sel.value);
+  st.cmp.sw[sel.dataset.cmpteam] = [];  // swaps belong to the team they were tried on
+  cmpSwapping = null;
   saveSettings(); renderCmp();
 });
 // Picking a name from the list adds it right away; Enter adds what was typed
 $("viewCmp").addEventListener("input", (e) => {
+  const swin = e.target.closest("[data-cmpswin]");
+  if (swin && CMP_SW_LOOKUP.has(swin.value) && cmpSwapping) {
+    const { side, id } = cmpSwapping;
+    st.cmp.sw[side] = [...st.cmp.sw[side].filter(([o]) => o !== id), [id, CMP_SW_LOOKUP.get(swin.value)]];
+    cmpSwapping = null;
+    saveSettings(); return renderCmp();
+  }
   const inp = e.target.closest("[data-cmpin]");
   if (inp && CMP_LOOKUP[inp.dataset.cmpin].has(inp.value)) cmpAdd(inp.dataset.cmpin);
 });
 $("viewCmp").addEventListener("keydown", (e) => {
   const inp = e.target.closest("[data-cmpin]");
   if (inp && e.key === "Enter") { e.preventDefault(); cmpAdd(inp.dataset.cmpin); }
+  if (e.key === "Escape" && cmpSwapping) { cmpSwapping = null; renderCmp(); }
 });
 
 // ---------- header explanations on hover / keyboard focus ----------
