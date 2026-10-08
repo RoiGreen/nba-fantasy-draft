@@ -339,6 +339,21 @@ table.cmpt td.dif.da { color: var(--accent); font-weight: 700; } table.cmpt td.d
 table.cmpt tr.punted td { opacity: .4; text-decoration: line-through; }
 table.cmpt tr.tot td { border-top: 2px solid var(--line); font-weight: 700; }
 table.cmpt td.lbl { font-family: var(--font-num); font-weight: 700; text-align: start; }
+.vbars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; height: 280px; padding-top: 18px; }
+.vgrp { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 6px; min-width: 0; }
+.vgrp.punted { opacity: .35; }
+.vpair { position: relative; display: flex; justify-content: center; gap: 3px; border-bottom: 1px solid var(--line); }
+.vbars.z .vpair { border-bottom: 0; }
+.vbars.z .vpair::after { content: ""; position: absolute; inset-inline: 0; bottom: 50%; height: 1px; background: var(--muted); opacity: .6; }
+.vcol { position: relative; width: min(26px, 45%); }
+.vbar { position: absolute; inset-inline: 0; bottom: var(--b); height: var(--h); min-height: 2px; border-radius: 3px 3px 0 0; background: var(--c); }
+.vbar.neg { border-radius: 0 0 3px 3px; }
+.vbar.a { --c: color-mix(in srgb, var(--accent) 75%, transparent); } .vbar.b { --c: color-mix(in srgb, var(--mine) 75%, transparent); }
+.vbar span { position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); font-family: var(--font-num); font-weight: 600;
+  font-size: .72rem; white-space: nowrap; color: var(--muted); }
+.vbar.neg span { bottom: auto; top: calc(100% + 2px); }
+.vbar.best span { color: var(--ink); font-weight: 700; }
+.vl { text-align: center; font-family: var(--font-num); font-weight: 700; font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cbars { display: grid; gap: 7px; }
 .cbrow { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 8px; align-items: center; }
 .cbrow .cbl { font-family: var(--font-num); font-weight: 700; font-size: .9rem; }
@@ -1649,22 +1664,22 @@ function renderCmpSide(side) {
 }
 
 function cmpBars(rows, A, B, kind) {
-  // kind "val": each pair scaled to the larger of the two; "z": centred on 0, scaled to the largest |Z| shown
+  // kind "val": each pair scaled to the larger of the two; "z": columns up or down from a 0 line in the middle,
+  // all scaled to the largest |Z| shown
   const zmax = kind === "z" ? Math.max(0.5, ...rows.flatMap((r) => [Math.abs(A.z[r.k]), Math.abs(B.z[r.k])])) : 0;
-  return `<div class="cbars">` + rows.map((r) => {
+  return `<div class="vbars${kind === "z" ? " z" : ""}">` + rows.map((r) => {
     const va = kind === "z" ? A.z[r.k] : A[r.k], vb = kind === "z" ? B.z[r.k] : B[r.k];
     const fmtv = (v) => v == null ? "–" : kind === "z" ? (v >= 0 ? "+" : "") + v.toFixed(2) : r.fmt(v);
     const lowBetter = kind !== "z" && r.k === "TOV";
     const best = va == null || vb == null || va === vb ? "" : (va > vb) !== lowBetter ? "a" : "b";
-    const bar = (side, v) => {
-      if (kind === "z") {
-        const w = Math.abs(v) / zmax * 50;
-        return `<div class="cbar z ${side}${best === side ? " best" : ""}" style="--w:${w}%;--x:${v >= 0 ? 50 : 50 - w}%"><i></i><span>${fmtv(v)}</span></div>`;
-      }
-      const mx = Math.max(Math.abs(va ?? 0), Math.abs(vb ?? 0)) || 1;
-      return `<div class="cbar ${side}${best === side ? " best" : ""}" style="--w:${(Math.abs(v ?? 0) / mx * 100).toFixed(1)}%"><i></i><span>${fmtv(v)}</span></div>`;
+    const col = (side, v) => {
+      let h, b;
+      if (kind === "z") { h = Math.abs(v ?? 0) / zmax * 50; b = (v ?? 0) >= 0 ? 50 : 50 - h; }
+      else { h = Math.abs(v ?? 0) / (Math.max(Math.abs(va ?? 0), Math.abs(vb ?? 0)) || 1) * 88; b = 0; }  // headroom for the label
+      const neg = kind === "z" && (v ?? 0) < 0 ? " neg" : "";
+      return `<div class="vcol"><div class="vbar ${side}${neg}${best === side ? " best" : ""}" style="--h:${h.toFixed(1)}%;--b:${b.toFixed(1)}%"><span>${fmtv(v)}</span></div></div>`;
     };
-    return `<div class="cbrow${r.punted ? " punted" : ""}" title="${esc(r.tip || r.l)}"><span class="cbl">${r.l}</span><div class="cbpair">${bar("a", va)}${bar("b", vb)}</div></div>`;
+    return `<div class="vgrp${r.punted ? " punted" : ""}" title="${esc(r.tip || r.l)}"><div class="vpair">${col("a", va)}${col("b", vb)}</div><span class="vl">${r.l}</span></div>`;
   }).join("") + `</div>`;
 }
 function cmpTable(rows, A, B, nameA, nameB) {
