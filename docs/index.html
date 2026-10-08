@@ -135,6 +135,11 @@ tr.is-taken td { opacity: .4; }
 tr.is-mine td.name { box-shadow: inset -4px 0 0 var(--mine); }
 tr.is-mine td.name .n { color: var(--mine); }
 .act { display: inline-flex; gap: 4px; }
+.actsel { font: inherit; font-family: var(--font-body); font-size: .8rem; font-weight: 600; padding: 3px 4px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--muted); max-width: 8.5em; cursor: pointer; }
+.actsel.is-f { border-color: var(--fav); color: var(--ink); }
+.actsel.is-m { border-color: var(--mine); background: color-mix(in srgb, var(--mine) 14%, var(--surface)); color: var(--ink); }
+.actsel.is-t { border-color: var(--ink); background: var(--sunk); color: var(--ink); }
 td.acts, th.acts { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 6px 0 6px -6px rgba(0,0,0,.25); }
 thead th.acts { z-index: 3; background: var(--sunk); }
 .act button { font: inherit; font-family: var(--font-body); font-size: .8rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
@@ -1037,13 +1042,26 @@ function scheduleLine(p) {
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
 
+// One dropdown per player: favorite, and at most one of taken / mine
+const ACT_OPTS = [["", "—"], ["f", "★ מועדף"], ["t", "נלקח"], ["m", "שלי"], ["ft", "★ מועדף + נלקח"], ["fm", "★ מועדף + שלי"]];
 function actions(p) {
-  const isMine = mine.has(p.id), isTaken = taken.has(p.id), isFav = fav.has(p.id);
-  return `<span class="act">
-    <button data-id="${p.id}" data-a="fav" class="star ${isFav ? "on-fav" : ""}" aria-pressed="${isFav}" aria-label="מועדף" title="מועדף">★</button>
-    <button data-id="${p.id}" data-a="mine" class="${isMine ? "on-mine" : ""}" aria-pressed="${isMine}">שלי</button>
-    <button data-id="${p.id}" data-a="taken" class="${isTaken ? "on-taken" : ""}" aria-pressed="${isTaken}">נלקח</button>
-  </span>`;
+  const v = (fav.has(p.id) ? "f" : "") + (mine.has(p.id) ? "m" : taken.has(p.id) ? "t" : "");
+  const cls = v.includes("m") ? "is-m" : v.includes("t") ? "is-t" : v ? "is-f" : "";
+  return `<select class="actsel ${cls}" data-act="${p.id}" aria-label="סימון ${esc(p.name)}">${
+    ACT_OPTS.map(([k, l]) => `<option value="${k}"${k === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+}
+function setPlayerState(id, v) {
+  const wantFav = v.includes("f"), want = v.includes("m") ? "m" : v.includes("t") ? "t" : "";
+  const i = picks.findIndex((x) => x.id === id), me = myIdx(), onClock = slotOf(picks.length + 1) - 1;
+  if (want === "t" && !(i >= 0 && picks[i].team !== me) && onClock === me) {
+    showToast("עכשיו התור שלך: \"שלי\" בוחר לקבוצה שלך. לבחירה של קבוצה אחרת, השתמש בחדר הדראפט.");
+    return render();  // put the dropdown back
+  }
+  if (wantFav) fav.add(id); else fav.delete(id);
+  if (!want) { if (i >= 0) picks.splice(i, 1); }
+  else if (want === "m") { if (i >= 0) picks[i] = { id, team: me }; else picks.push({ id, team: me }); }
+  else if (!(i >= 0 && picks[i].team !== me)) { if (i >= 0) picks[i] = { id, team: onClock }; else picks.push({ id, team: onClock }); }
+  rebuildSets(); render(); flushPicks();
 }
 
 function renderFav() {
@@ -1787,6 +1805,10 @@ $("pickBtn").addEventListener("click", () => {
   $("pickInput").value = "";
 });
 $("pickInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("pickBtn").click(); } });
+document.addEventListener("change", (e) => {
+  const sel = e.target.closest("select[data-act]");
+  if (sel) setPlayerState(Number(sel.dataset.act), sel.value);
+});
 $("quickPicks").addEventListener("change", (e) => {
   const id = Number(e.target.value);
   if (!id) return;
