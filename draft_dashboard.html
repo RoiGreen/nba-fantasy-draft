@@ -1723,14 +1723,15 @@ function renderCmp() {
   const advRows = CMP_ADV.map((r) => ({ ...r, fmt: r.k === "AVAIL" ? (v) => Math.round(v * 100) + "%" : r.k === "ASTTOV" ? (v) => v.toFixed(2) : fmt1 }));
   const adv = cmpTable(advRows, A, B, nA, nB);
   const lead = (x, y) => x > y ? nA : y > x ? nB : "שוויון";
-  const sign = (v) => (v >= 0 ? "+" : "") + v;
+  // "הפרש 1.03 לטובת X"; a gap that rounds to zero is a tie
+  const favor = (d, f) => f(Math.abs(d)) === f(0) ? "שוויון" : `הפרש ${f(Math.abs(d))} לטובת ${esc(d > 0 ? nA : nB)}`;
   const chart = c.chart === "z" ? "z" : "val";
 
   out.innerHTML = `
     <div class="cmpsum">
       <div class="card"><span class="k">קטגוריות (מתוך ${CATS.length - st.punts.size})</span><span class="v">${gen.wa} : ${gen.wb}</span><span class="k">${gen.wa === gen.wb ? "שוויון" : `${esc(lead(gen.wa, gen.wb))} מוביל`}</span></div>
-      <div class="card"><span class="k">Z</span><span class="v">${A.Z.toFixed(2)} : ${B.Z.toFixed(2)}</span><span class="k">הפרש ${sign((A.Z - B.Z).toFixed(2))}</span></div>
-      <div class="card"><span class="k">FPTS ${per}</span><span class="v">${fmt1(A.FPTS)} : ${fmt1(B.FPTS)}</span><span class="k">הפרש ${sign(fmt1(A.FPTS - B.FPTS))}</span></div>
+      <div class="card"><span class="k">Z</span><span class="v">${A.Z.toFixed(2)} : ${B.Z.toFixed(2)}</span><span class="k">${favor(A.Z - B.Z, (v) => v.toFixed(2))}</span></div>
+      <div class="card"><span class="k">FPTS ${per}</span><span class="v">${fmt1(A.FPTS)} : ${fmt1(B.FPTS)}</span><span class="k">${favor(A.FPTS - B.FPTS, fmt1)}</span></div>
       ${several ? `<div class="card"><span class="k">שחקנים</span><span class="v">${LA.length} : ${LB.length}</span><span class="k">${LA.length !== LB.length ? "צד עם יותר שחקנים צובר יותר" : "&nbsp;"}</span></div>` : ""}
     </div>
     <div class="cmpkey"><span><i style="background:var(--accent)"></i>${esc(nA)}</span><span><i style="background:var(--mine)"></i>${esc(nB)}</span></div>
