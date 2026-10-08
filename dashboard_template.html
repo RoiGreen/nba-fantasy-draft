@@ -187,6 +187,8 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .multi summary { cursor: pointer; padding: 7px 10px; font-weight: 600; list-style-position: inside; }
 .multi[open] summary { border-bottom: 1px solid var(--line); }
 .multi .chips { padding: 8px; }
+.seasonlist { display: grid; gap: 6px; padding: 8px; max-height: 180px; overflow-y: auto; }
+.seasonlist .chip { justify-self: stretch; text-align: start; }
 .multi .linkbtn { border: 0; background: none; color: var(--muted); font: inherit; font-size: .85rem; cursor: pointer; text-decoration: underline; padding: 0 10px 8px; }
 
 .catfilters { display: grid; gap: 6px; }
@@ -278,12 +280,15 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <h2 id="hFmt">פורמט</h2>
         <div class="field">
           <span class="lbl">עונות</span>
-          <div class="chips" role="group" aria-label="העונות שמהן מחושבים כל הנתונים">
-            <button class="chip" data-avs="3" aria-pressed="false">2026-27 (Pre Season)</button>
-            <button class="chip" data-avs="2" aria-pressed="true">2025-26</button>
-            <button class="chip" data-avs="1" aria-pressed="false">2024-25</button>
-            <button class="chip" data-avs="0" aria-pressed="false">2023-24</button>
-          </div>
+          <details class="multi" id="seasonPick">
+            <summary id="seasonSummary">2025-26</summary>
+            <div class="seasonlist" role="group" aria-label="העונות שמהן מחושבים כל הנתונים">
+              <button class="chip" type="button" data-avs="3" aria-pressed="false">2026-27 (Pre Season)</button>
+              <button class="chip" type="button" data-avs="2" aria-pressed="true">2025-26</button>
+              <button class="chip" type="button" data-avs="1" aria-pressed="false">2024-25</button>
+              <button class="chip" type="button" data-avs="0" aria-pressed="false">2023-24</button>
+            </div>
+          </details>
           <p class="hint">כל הנתונים בכל הטבלאות מחושבים מהעונות שנבחרו. כמה עונות = ממוצע משוקלל לפי משחקים.</p>
         </div>
         <div class="field">
@@ -1362,6 +1367,9 @@ function syncControls() {
   $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv";
   $("onlyFav").checked = st.onlyFav;
   for (const b of document.querySelectorAll("[data-avs]")) b.setAttribute("aria-pressed", st.availSeasons.includes(Number(b.dataset.avs)));
+  // Collapsed list shows the chosen seasons, newest first
+  $("seasonSummary").textContent = [...document.querySelectorAll("[data-avs]")]
+    .filter((b) => st.availSeasons.includes(Number(b.dataset.avs))).map((b) => b.textContent).join(", ");
   for (const b of document.querySelectorAll("[data-role]")) b.setAttribute("aria-pressed", st.roles.includes(b.dataset.role));
   for (const b of document.querySelectorAll("[data-inj]")) b.setAttribute("aria-pressed", b.dataset.inj === st.inj);
   for (const b of document.querySelectorAll("[data-rk]")) b.setAttribute("aria-pressed", b.dataset.rk === st.rookies);
