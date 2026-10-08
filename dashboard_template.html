@@ -283,10 +283,11 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <h2 id="hFmt">פורמט</h2>
         <div class="field">
           <span class="lbl">עונות</span>
-          <p class="lockmsg" id="seasonLockMsg" role="status" hidden>הסינון מול יריבה מחושב על עונת 2025-26. כדי לבחור עונות אחרות, בטל קודם את הסינון מול יריבה.</p>
+          <p class="lockmsg" id="seasonLockMsg" role="status" hidden>הסינון מול יריבה מחושב על העונה הסדירה (2025-26, ו־2026-27 כשיש בה משחקים). כדי לבחור עונות אחרות, בטל קודם את הסינון מול יריבה.</p>
           <details class="multi" id="seasonPick">
             <summary id="seasonSummary">2025-26</summary>
             <div class="seasonlist" role="group" aria-label="העונות שמהן מחושבים כל הנתונים">
+              <button class="chip" type="button" data-avs="4" aria-pressed="false" hidden>2026-27</button>
               <button class="chip" type="button" data-avs="3" aria-pressed="false">2026-27 (Pre Season)</button>
               <button class="chip" type="button" data-avs="2" aria-pressed="true">2025-26</button>
               <button class="chip" type="button" data-avs="1" aria-pressed="false">2024-25</button>
@@ -364,7 +365,7 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <div class="field">
           <label for="vsOpp">נגד יריבה</label>
           <select id="vsOpp"><option value="">ללא (נתוני העונות שנבחרו)</option></select>
-          <p class="hint">בחירת יריבה מציגה לכל שחקן את הממוצע ב־4 המשחקים האחרונים שלו מולה בעונה הסדירה 2025-26.</p>
+          <p class="hint">בחירת יריבה מציגה לכל שחקן את הממוצע ב־4 המשחקים האחרונים שלו מולה בעונה הסדירה (2025-26, ו־2026-27 כשיש בה משחקים).</p>
         </div>
         <div class="field"><label for="maxAge">גיל מקסימלי</label><input type="number" id="maxAge" min="19" max="42" value="42"></div>
         <label class="check"><input type="checkbox" id="hideTaken" checked> הסתר שחקנים שנבחרו</label>
@@ -518,13 +519,21 @@ function line(arr, mode) {
 const fpts = (o) => Object.entries(PTSW).reduce((a, [k, w]) => a + o[k] * w, 0);
 
 const SEASONS = D.seasons;  // start years, e.g. [2023, 2024, 2025]
-const seasonLabel = (y) => `${String(y).slice(2)}-${String(y + 1).slice(2)}`;
-const players = D.players.map((p) => ({ ...p }));
+const seasonLabel = (y) => y === D.preseason ? "26-27 Pre" : `${String(y).slice(2)}-${String(y + 1).slice(2)}`;
+// Rookies keep their projection to fall back on when no real games are chosen
+const players = D.players.map((p) => ({ ...p, proj: p.rookie ? p.s : null, projGp: p.rookie ? p.gp : null }));
+// Games minimum per season: one game in the preseason; for the season in progress it scales with
+// how far the season has gone (60% of the most games anyone has played), capped by the slider
+function seasonMinGames(y) {
+  if (y === D.preseason) return 1;
+  if (y === D.current) return Math.min(st.minGp, Math.max(1, Math.ceil(0.6 * (D.curMaxGp || 1))));
+  return st.minGp;
+}
 function setLines(p) {
   p.L = { g: line(p.s, "g"), "36": line(p.s, "36") };
   p.F = { g: fpts(p.L.g), "36": fpts(p.L["36"]) };
 }
-const chosenSeasons = () => st.availSeasons.map((i) => SEASONS[i]).sort();
+const chosenSeasons = () => st.availSeasons.map((i) => SEASONS[i]).filter((y) => y != null).sort((a, b) => a - b);
 function seasonRange() {
   const ys = chosenSeasons();
   const contiguous = ys.every((y, i) => i === 0 || y === ys[i - 1] + 1);
@@ -538,10 +547,13 @@ function seasonRange() {
 function applySeasons() {
   const ys = chosenSeasons();
   for (const p of players) {
-    if (p.rookie) { if (!p.L) setLines(p); p.has = true; continue; }
+    if (p.rookie && !ys.some((y) => p.seasons?.[y]?.gp >= seasonMinGames(y))) {
+      p.s = p.proj; p.gp = p.projGp; p.gpTotal = p.projGp; p.adv = null; p.team25 = null; p.srcSeason = null;
+      setLines(p); p.has = true; continue;
+    }
     // A season counts only when he reached the games minimum in it (the minimum is per season)
     // The preseason is ~5 games a team, so one game is enough there
-    const chosen = ys.filter((y) => p.seasons[y]?.gp >= (y === D.preseason ? 1 : st.minGp)).map((y) => ({ y, ...p.seasons[y] }));
+    const chosen = ys.filter((y) => p.seasons[y]?.gp >= seasonMinGames(y)).map((y) => ({ y, ...p.seasons[y] }));
     // No qualifying season: off the board, but keep numbers for his favorites / my-team entries
     p.has = chosen.length > 0;
     const lines = p.has ? chosen : Object.keys(p.seasons).map(Number).sort().map((y) => ({ y, ...p.seasons[y] }));
@@ -560,7 +572,7 @@ function applySeasons() {
   // Against one opponent: each player's last games vs that team replace the season numbers
   if (st.vsOpp) {
     for (const p of players) {
-      const v = !p.rookie && p.vs?.[st.vsOpp];
+      const v = p.vs?.[st.vsOpp];
       if (!v) { p.has = false; continue; }
       p.s = v.slice(1); p.gp = v[0]; p.gpTotal = v[0]; p.adv = null;
       p.has = true;
@@ -1363,7 +1375,7 @@ function syncControls() {
   setField("vsOpp", st.vsOpp || "");
   $("zPool").textContent = st.teams * st.roster;
   $("vsNote").hidden = !st.vsOpp;
-  if (st.vsOpp) $("vsNote").innerHTML = `מוצגים ממוצעי ${D.vsGames} המשחקים האחרונים של כל שחקן מול <b>${esc(st.vsOpp)}</b> בעונה הסדירה 2025-26. GP = מספר המשחקים מולה. <button type="button" id="vsClear">חזרה לנתוני העונות</button>`;
+  if (st.vsOpp) $("vsNote").innerHTML = `מוצגים ממוצעי ${D.vsGames} המשחקים האחרונים של כל שחקן מול <b>${esc(st.vsOpp)}</b> בעונה הסדירה (${D.seasons.includes(D.current) ? "2025-26 ו־2026-27" : "2025-26"}). GP = מספר המשחקים מולה. <button type="button" id="vsClear">חזרה לנתוני העונות</button>`;
   for (const b of document.querySelectorAll("[data-teamsel]")) b.setAttribute("aria-pressed", st.teamSel.includes(b.dataset.teamsel));
   $("teamSummary").textContent = !st.teamSel.length ? "כל הקבוצות"
     : st.teamSel.length <= 4 ? st.teamSel.map((t) => t === "-" ? "FA" : t).join(", ") : `${st.teamSel.length} קבוצות נבחרו`;
@@ -1374,7 +1386,7 @@ function syncControls() {
   for (const b of document.querySelectorAll("[data-avs]")) b.setAttribute("aria-pressed", st.availSeasons.includes(Number(b.dataset.avs)));
   // Collapsed list shows the chosen seasons, newest first
   document.querySelector(".seasonlist").classList.toggle("locked", !!st.vsOpp);
-  if (st.vsOpp) $("seasonSummary").textContent = "2025-26 (מול יריבה)";
+  if (st.vsOpp) $("seasonSummary").textContent = `${D.seasons.includes(D.current) ? "2025-26 + 2026-27" : "2025-26"} (מול יריבה)`;
   else $("seasonSummary").textContent = [...document.querySelectorAll("[data-avs]")]
     .filter((b) => st.availSeasons.includes(Number(b.dataset.avs))).map((b) => b.textContent).join(", ");
   for (const b of document.querySelectorAll("[data-role]")) b.setAttribute("aria-pressed", st.roles.includes(b.dataset.role));
@@ -1574,6 +1586,10 @@ $("undoBtn").addEventListener("click", () => {
 });
 $("q").addEventListener("input", (e) => { st.q = e.target.value; update(false); });
 for (const id of ["hideTaken", "onlyMoved", "onlyFav"]) $(id).addEventListener("change", (e) => { st[id] = e.target.checked; update(false); });
+
+if (D.seasons.includes(D.current)) document.querySelector('[data-avs="4"]').hidden = false;
+st.availSeasons = st.availSeasons.filter((i) => SEASONS[i] != null);
+if (!st.availSeasons.length) st.availSeasons = [2];
 
 // Clicking into a number field selects its value, so typing replaces it
 document.addEventListener("focusin", (e) => { if (e.target.matches('input[type="number"]')) e.target.select(); });

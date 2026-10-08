@@ -42,15 +42,17 @@ ROOKIE_CSV = HERE / "rookie_projections_2026_27.csv"
 # Seasons the page can choose from, by start year, and their files
 AVAIL_SEASONS = [2023, 2024, 2025]
 SEASON_TAG = {2023: "_2023_24", 2024: "_2024_25", 2025: ""}  # 2025-26 files carry no suffix
-# 2026-27 preseason, built from the daily game logs (daily_update.py); offered as its own season
-PRESEASON = 2026
+# 2026-27, built from the daily game logs (daily_update.py). The regular season is keyed 2026 like the
+# other seasons; the preseason gets its own key so the two can be chosen separately.
+CURRENT = 2026
+CURRENT_LOGS = HERE / "nba_2026_27" / "game_logs_regular.csv"
+PRESEASON = 1026
 PRESEASON_LOGS = HERE / "nba_2026_27" / "game_logs_preseason.csv"
 INJURIES_CSV = HERE / "nba_2026_27" / "injuries.csv"  # ESPN injury list, from injuries.py
 INJURIES_STAMP = HERE / "nba_2026_27" / "injuries_updated.txt"
-# Head-to-head: the last N 2025-26 regular-season games against each opponent
+# Head-to-head: the last N regular-season games against each opponent, 2025-26 and 2026-27
 VS_GAMES = 4
-GAME_LOG_FILES = [DATA / "player_game_logs_regular.csv"]
-SEASONS = AVAIL_SEASONS + [PRESEASON]
+GAME_LOG_FILES = [DATA / "player_game_logs_regular.csv", CURRENT_LOGS]
 SEASON_FILES = HERE / "nba_2025_26" / "rookies"
 
 
@@ -140,6 +142,7 @@ def rookies(existing: set[int]) -> list[dict]:
             "gp": int(round(r["GP"])),
             "s": [round(float(r[c]), 2) for c in STATS],
             "rookie": True,
+            "seasons": {},
             "pick": int(r["PICK"]),
             "college": None if pd.isna(r["COLLEGE"]) else r["COLLEGE"],
             "note": None if pd.isna(r["SCOUTING_NOTE"]) else r["SCOUTING_NOTE"],
@@ -148,13 +151,12 @@ def rookies(existing: set[int]) -> list[dict]:
     return out
 
 
-def preseason_lines(rookie_ids: set[int]) -> dict[int, dict]:
-    """Per-game 2026-27 preseason line per player from the game logs (games he actually played).
-    Drafted rookies are left out: they keep their model projection."""
-    if not PRESEASON_LOGS.exists():
+def log_lines(path: Path, skip: set[int] = frozenset()) -> dict[int, dict]:
+    """Per-game line per player from a game-log file (games he actually played)."""
+    if not path.exists() or path.stat().st_size < 100:
         return {}
-    logs = pd.read_csv(PRESEASON_LOGS)
-    logs = logs[(logs["MIN"] > 0) & ~logs["PLAYER_ID"].isin(rookie_ids)].sort_values("GAME_DATE")
+    logs = pd.read_csv(path)
+    logs = logs[(logs["MIN"] > 0) & ~logs["PLAYER_ID"].isin(skip)].sort_values("GAME_DATE")
     out = {}
     for pid, g in logs.groupby("PLAYER_ID"):
         out[int(pid)] = {
@@ -178,7 +180,7 @@ def attach_vs(players: list[dict]) -> None:
     logs = pd.concat(frames, ignore_index=True)
     logs = logs[logs["MIN"] > 0]
     logs["OPP"] = logs["MATCHUP"].str.split().str[-1]
-    logs["GAME_DATE"] = pd.to_datetime(logs["GAME_DATE"])
+    logs["GAME_DATE"] = pd.to_datetime(logs["GAME_DATE"].astype(str).str[:10])  # files differ: "2026-10-03" vs "2026-10-03T00:00:00"
     logs = logs.sort_values("GAME_DATE", ascending=False)
     last = logs.groupby(["PLAYER_ID", "OPP"]).head(VS_GAMES)
     agg = last.groupby(["PLAYER_ID", "OPP"]).agg(n=("MIN", "size"), **{c: (c, "mean") for c in STATS}).reset_index()
@@ -231,15 +233,17 @@ def season_players(roster: pd.DataFrame) -> list[dict]:
                 line["adv"] = [round(float(adv.at[pid, c]), 3) for c in ADV]
             p["seasons"][str(y)] = line
     rookie_ids = set(pd.read_csv(ROOKIE_CSV)["PLAYER_ID"].astype(int)) if ROOKIE_CSV.exists() else set()
-    for pid, pre in preseason_lines(rookie_ids).items():
-        on_roster = pid in roster.index
-        p = by_id.setdefault(pid, {
-            "id": pid, "name": pre["name"], "age": None,
-            "team26": roster.at[pid, "TEAM_ABBREVIATION"] if on_roster else None,
-            "pos": roster.at[pid, "POSITION"] if on_roster else None,
-            "seasons": {},
-        })
-        p["seasons"][str(PRESEASON)] = pre["line"]
+    # Drafted rookies are their own entries (with a projection), so their 2026-27 lines are added later
+    for key, path in [(PRESEASON, PRESEASON_LOGS), (CURRENT, CURRENT_LOGS)]:
+        for pid, ln in log_lines(path, rookie_ids).items():
+            on_roster = pid in roster.index
+            p = by_id.setdefault(pid, {
+                "id": pid, "name": ln["name"], "age": None,
+                "team26": roster.at[pid, "TEAM_ABBREVIATION"] if on_roster else None,
+                "pos": roster.at[pid, "POSITION"] if on_roster else None,
+                "seasons": {},
+            })
+            p["seasons"][str(key)] = ln["line"]
     for p in by_id.values():
         p["team26"] = None if pd.isna(p["team26"]) else p["team26"]
         p["pos"] = None if pd.isna(p["pos"]) else p["pos"]
@@ -257,6 +261,13 @@ def main() -> None:
     for p in players:
         p["injured"] = p["id"] in injured_ids
     players += rookies({p["id"] for p in players})
+    # Rookies' real 2026-27 regular-season games, used instead of the projection once that season is picked
+    current = log_lines(CURRENT_LOGS)
+    for p in players:
+        if p.get("rookie") and p["id"] in current:
+            p["seasons"][str(CURRENT)] = current[p["id"]]["line"]
+    cur_max_gp = max((ln["line"]["gp"] for ln in current.values()), default=0)
+    seasons = AVAIL_SEASONS + [PRESEASON] + ([CURRENT] if current else [])  # 2026-27 shows up after its first game
     # Free agents are left out; once one signs, the daily roster refresh gives him a team
     free_agents = [p for p in players if not p.get("team26") and not p.get("rookie")]
     players = [p for p in players if p.get("team26") or p.get("rookie")]
@@ -287,7 +298,8 @@ def main() -> None:
         p["avail"] = avail.get(p["id"], [None] * len(AVAIL_SEASONS))
 
     inj_updated = INJURIES_STAMP.read_text(encoding="utf-8").strip() if INJURIES_STAMP.exists() else None
-    payload = json.dumps({"stats": STATS, "seasons": SEASONS, "preseason": PRESEASON, "players": players,
+    payload = json.dumps({"stats": STATS, "seasons": seasons, "preseason": PRESEASON, "current": CURRENT,
+                          "curMaxGp": cur_max_gp, "players": players,
                           "teamSeasons": team_seasons, "injUpdated": inj_updated, "vsGames": VS_GAMES},
                          ensure_ascii=False, separators=(",", ":"))
     html = html.replace("/*__DATA__*/null", payload)
