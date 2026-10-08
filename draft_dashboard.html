@@ -148,6 +148,11 @@ td.acts { position: relative; }
 td.acts:has(details[open]) { z-index: 20; }
 .actmenu { position: absolute; top: calc(100% + 4px); left: 0; right: auto; z-index: 21; min-width: 9.5em; display: grid; gap: 2px; padding: 4px;
   background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.28); }
+.actmenu .amitem { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; font-size: .85rem; cursor: pointer; color: var(--ink); }
+.actmenu .amitem:hover { background: var(--sunk); }
+.actmenu .amitem input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; margin: 0; }
+.actmenu .amitem.off { color: var(--muted); opacity: .45; cursor: not-allowed; }
+.actmenu .amitem.off input { cursor: not-allowed; }
 .actmenu button { display: grid; grid-template-columns: 1.2em 1fr; align-items: center; gap: 4px; text-align: start; font: inherit; font-size: .85rem;
   padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); cursor: pointer; }
 .actmenu button:hover:not(:disabled) { background: var(--sunk); }
@@ -680,17 +685,29 @@ function applySeasons() {
 const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 5,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
-  hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [], leagueName: "", teamNames: [],
+  hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [], leagueName: "", teamNames: [], tags: {}, tagsMigrated: false,
   sort: "zTotal", asc: false, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2], vsOpp: "",
 };
-let taken = new Set(), mine = new Set(), fav = new Set();
+// taken / mine = everything that marks a player as gone or on my team (table tags + draft picks);
+// draftTaken / draftMine = draft-room picks only (what the draft room counts as available)
+let taken = new Set(), mine = new Set(), fav = new Set(), draftTaken = new Set(), draftMine = new Set();
 // Every pick in draft order, with the team (0-based draft slot) that made it: [{ id, team }]
 let picks = [];
 const myIdx = () => Math.min(Math.max(st.myPos, 1), Math.max(st.teams, 1)) - 1;
 const teamName = (i) => (st.teamNames[i] || "").trim() || `קבוצה ${i + 1}`;
 function rebuildSets() {
-  taken = new Set(picks.filter((x) => x.team !== myIdx()).map((x) => x.id));
-  mine = new Set(picks.filter((x) => x.team === myIdx()).map((x) => x.id));
+  draftTaken = new Set(picks.filter((x) => x.team !== myIdx()).map((x) => x.id));
+  draftMine = new Set(picks.filter((x) => x.team === myIdx()).map((x) => x.id));
+  // Table tags ("נלקח" / "שלי" in the table) are personal notes for waivers and upcoming picks,
+  // kept apart from the draft room. Before they existed, the table wrote draft picks: carry those over once.
+  if (!st.tagsMigrated) {
+    st.tags = {};
+    for (const x of picks) st.tags[x.id] = x.team === myIdx() ? "m" : "t";
+    st.tagsMigrated = true;
+  }
+  const tagged = (k) => Object.keys(st.tags).filter((id) => st.tags[id] === k).map(Number);
+  taken = new Set([...draftTaken, ...tagged("t")]);
+  mine = new Set([...draftMine, ...tagged("m")]);
 }
 function picksFrom(d) {
   const raw = Array.isArray(d.picks) ? d.picks.filter((x) => x && typeof x.id === "number")
@@ -706,6 +723,7 @@ const SITE = /*__SITE__*/null;
 const SETTINGS_KEY = "draftroom.settings.v1", PICKS_KEY = "draftroom.picks.v1";
 function applySettings(s) {
   if (s && !Array.isArray(s.teamNames)) s.teamNames = [];
+  if (s && (typeof s.tags !== "object" || s.tags === null || Array.isArray(s.tags))) delete s.tags;
   if (!s || typeof s !== "object") return;
   if (s.onlyInj && !s.inj) s.inj = "only";
   if (!Array.isArray(s.roles)) s.roles = s.role ? [s.role] : [];
@@ -804,6 +822,7 @@ const COLS = [
 
 let last = null;
 function compute() {
+  rebuildSets();  // tags may have just arrived with the account's settings
   applySeasons(); computeTeams(); computeDist(); computeWeek();
   const list = players.filter((p) => p.has && p.L.g.MIN >= st.minMin);
   last = { list, now: rankAll(list, st.mode) };
@@ -1059,27 +1078,16 @@ function scheduleLine(p) {
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
 
 // One small dropdown per player with three ticks: favorites, taken, mine. Taken and mine exclude each other.
+let openActId = null;  // keep a player's menu open while ticking several boxes
 function actions(p) {
-  const f = fav.has(p.id), m = mine.has(p.id), t = taken.has(p.id);
+  const f = fav.has(p.id), tag = st.tags[p.id] || "", m = tag === "m", t = tag === "t";
   const label = [f ? "★" : "", m ? "שלי" : t ? "נלקח" : ""].filter(Boolean).join(" · ") || "סימון";
   const cls = m ? "is-m" : t ? "is-t" : f ? "is-f" : "";
-  const item = (k, text, on, off) => `<button type="button" data-am="${k}" data-id="${p.id}" aria-pressed="${on}"${off ? ` disabled title="אי אפשר לסמן גם נלקח וגם שלי"` : ""}><span class="tick">${on ? "✓" : ""}</span>${text}</button>`;
-  return `<details class="actpick ${cls}"><summary aria-label="סימון ${esc(p.name)}">${label}</summary><div class="actmenu">
-    ${item("f", "★ מועדפים", f, false)}${item("t", "נלקח", t, m)}${item("m", "שלי", m, t)}
+  const box = (k, text, on, off) => `<label class="amitem${off ? " off" : ""}"${off ? ` title="אי אפשר לסמן גם נלקח וגם שלי"` : ""}>` +
+    `<input type="checkbox" data-am="${k}" data-id="${p.id}"${on ? " checked" : ""}${off ? " disabled" : ""}>${text}</label>`;
+  return `<details class="actpick ${cls}"${openActId === p.id ? " open" : ""}><summary aria-label="סימון ${esc(p.name)}">${label}</summary><div class="actmenu">
+    ${box("f", "★ מועדפים", f, false)}${box("t", "נלקח", t, m)}${box("m", "שלי", m, t)}
   </div></details>`;
-}
-function setPlayerState(id, v) {
-  const wantFav = v.includes("f"), want = v.includes("m") ? "m" : v.includes("t") ? "t" : "";
-  const i = picks.findIndex((x) => x.id === id), me = myIdx(), onClock = slotOf(picks.length + 1) - 1;
-  if (want === "t" && !(i >= 0 && picks[i].team !== me) && onClock === me) {
-    showToast("עכשיו התור שלך: \"שלי\" בוחר לקבוצה שלך. לבחירה של קבוצה אחרת, השתמש בחדר הדראפט.");
-    return render();  // put the dropdown back
-  }
-  if (wantFav) fav.add(id); else fav.delete(id);
-  if (!want) { if (i >= 0) picks.splice(i, 1); }
-  else if (want === "m") { if (i >= 0) picks[i] = { id, team: me }; else picks.push({ id, team: me }); }
-  else if (!(i >= 0 && picks[i].team !== me)) { if (i >= 0) picks[i] = { id, team: onClock }; else picks.push({ id, team: onClock }); }
-  rebuildSets(); render(); flushPicks();
 }
 
 function renderFav() {
@@ -1340,7 +1348,7 @@ function renderDraft() {
 
   // Available players, best first by the current ranking
   const rank = last.now.rank;
-  const avail = last.list.filter((p) => !taken.has(p.id) && !mine.has(p.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id));
+  const avail = last.list.filter((p) => !draftTaken.has(p.id) && !draftMine.has(p.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id));
   PICK_LOOKUP = new Map(avail.map((p) => [pickValue(p, rank.get(p.id)), p.id]));
   $("availList").innerHTML = avail.slice(0, 400).map((p) => `<option value="${esc(pickValue(p, rank.get(p.id)))}"></option>`).join("");
   // My favorites: available ones can be picked with one click, picked ones show who took them
@@ -1823,21 +1831,22 @@ $("pickBtn").addEventListener("click", () => {
   $("pickInput").value = "";
 });
 $("pickInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("pickBtn").click(); } });
-// Ticks in the per-player dropdown
+// Checkboxes in the per-player menu: table tags only, never draft-room picks
+document.addEventListener("change", (e) => {
+  const box = e.target.closest("input[data-am]");
+  if (!box) return;
+  const id = Number(box.dataset.id), k = box.dataset.am;
+  if (k === "f") { if (box.checked) fav.add(id); else fav.delete(id); }
+  else if (box.checked) st.tags[id] = k;
+  else delete st.tags[id];
+  openActId = id;
+  rebuildSets(); update(false); flushPicks();
+});
 document.addEventListener("click", (e) => {
-  const b = e.target.closest("button[data-am]");
-  if (b) {
-    e.stopPropagation();
-    if (b.disabled) return;
-    const id = Number(b.dataset.id);
-    let f = fav.has(id), state = mine.has(id) ? "m" : taken.has(id) ? "t" : "";
-    if (b.dataset.am === "f") f = !f;
-    else state = state === b.dataset.am ? "" : b.dataset.am;
-    setPlayerState(id, (f ? "f" : "") + state);
-    return;
-  }
-  // Only one dropdown open at a time; a click elsewhere closes it
+  if (e.target.closest(".actmenu")) return;  // ticking inside the menu keeps it open
+  // Only one menu open at a time; a click elsewhere closes it
   const open = e.target.closest("details.actpick");
+  if (!open) openActId = null;
   for (const d of document.querySelectorAll("details.actpick[open]")) if (d !== open) d.open = false;
 }, true);
 $("quickPicks").addEventListener("change", (e) => {
