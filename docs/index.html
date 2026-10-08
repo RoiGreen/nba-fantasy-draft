@@ -590,10 +590,10 @@ function applySeasons() {
 
 // ---------- state ----------
 const st = {
-  fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 4,
+  fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 5,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
-  sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2], vsOpp: "",
+  sort: "zTotal", asc: false, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2], vsOpp: "",
 };
 let taken = new Set(), mine = new Set(), fav = new Set();
 // Every "taken" / "mine" click in draft order: [{ id, who: "t" | "m" }]
@@ -623,6 +623,7 @@ function applySettings(s) {
   delete s.minAst;
   if ((s.settingsVersion || 1) < 2) { s.teams = 8; s.settingsVersion = 2; }
   if (s.settingsVersion < 4) { s.fmt = "cat"; s.settingsVersion = 4; }  // default ranking is Z (9 categories)
+  if (s.settingsVersion < 5) { s.sort = "zTotal"; s.asc = false; s.settingsVersion = 5; }  // default sort: Z, highest first
   if (["rankAlt", "gap", "trend", "vers", "weak"].includes(s.sort)) { s.sort = "rank"; s.asc = true; }
   delete s.onlySleepers;
   Object.assign(st, s, { punts: new Set(s.punts || []), pos: new Set(s.pos || []) });
@@ -768,13 +769,15 @@ function render() {
   };
   const statLabel = { FG_RAW: "FG%", FT_RAW: "FT%" }[st.sort] ||
     (["rank", "name", "age"].includes(st.sort) ? null : COLS.find((c) => c.k === st.sort)?.l);
+  // Sorting by the value the ranking itself uses (Z in categories, FPTS in points) would just repeat Rank
+  const sameAsRank = (st.fmt === "cat" && st.sort === "zTotal") || (st.fmt === "pts" && st.sort === "fp");
   // Category ranks compare only players who pass the category threshold
-  const statRank = statLabel ? rankerFor(allRows.filter((r) => catOk(r.p)).map(best)) : null;
+  const statRank = statLabel && !sameAsRank ? rankerFor(allRows.filter((r) => catOk(r.p)).map(best)) : null;
 
   const posR = positionRank();
 
   // header
-  $("head").innerHTML = (statLabel ? `<th class="nosort" scope="col">${esc(statLabel)} Rank</th>` : "") + COLS.map((c) => {
+  $("head").innerHTML = (statRank ? `<th class="nosort" scope="col">${esc(statLabel)} Rank</th>` : "") + COLS.map((c) => {
     const label = c.k === "rank" ? (m === "g" ? "Rank" : "Rank 36 MIN") : c.l;
     const cls = [st.sort === c.k ? "sorted" : "", st.sort === c.k && st.asc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : "",
                  c.cat && st.punts.has(c.k) ? "punted" : ""].join(" ");
