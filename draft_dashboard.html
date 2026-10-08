@@ -677,7 +677,8 @@ function render() {
     const label = c.k === "rank" ? (m === "g" ? "Rank" : "Rank 36 MIN") : c.l;
     const cls = [st.sort === c.k ? "sorted" : "", st.sort === c.k && st.asc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : "",
                  c.cat && st.fmt === "cat" && st.punts.has(c.k) ? "punted" : ""].join(" ");
-    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-k="${c.k}"`} scope="col">${esc(label)}</th>` + (c.k === "rank" ? posTh(posR) : "");
+    if (c.k === "rank" && posR) return posTh(posR);  // one position picked: show only the rank within it
+    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-k="${c.k}"`} scope="col">${esc(label)}</th>`;
   }).join("");
 
   // body
@@ -690,12 +691,12 @@ function render() {
     }).join("");
     return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
       ${statRank ? `<td class="rank" style="color:var(--accent)">${statRank(best({ p, z }))}</td>` : ""}
-      <td class="rank">${rank}</td>${posTd(posR, p)}
+      ${posR ? posTd(posR, p) : `<td class="rank">${rank}</td>`}
       ${nameCell(p)}
       <td>${p.age ?? "–"}</td><td>${p.gp}</td>${availCell(p)}<td>${fmt1(p.L.g.MIN)}</td>${cats}
       <td class="val">${z.total.toFixed(2)}</td><td class="val">${fmt1(p.F[m])}</td>
       <td class="acts">${actions(p)}</td></tr>`;
-  }).join("") || EMPTY_ROW(COLS.length + (statRank ? 1 : 0) + (posR ? 1 : 0));
+  }).join("") || EMPTY_ROW(COLS.length + (statRank ? 1 : 0));
 
   // counts
   const avail = list.filter((p) => !taken.has(p.id) && !mine.has(p.id)).length;
@@ -902,7 +903,8 @@ function renderAdv() {
   const posR = positionRank();
   $("advHead").innerHTML = (statCol ? `<th class="nosort" scope="col">${esc(statCol.l)} Rank</th>` : "") + ADV_COLS.map((c) => {
     const cls = [st.advSort === c.k ? "sorted" : "", st.advSort === c.k && st.advAsc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : ""].join(" ");
-    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.k === "rank" ? (st.mode === "g" ? "Rank" : "Rank 36 MIN") : c.l)}</th>` + (c.k === "rank" ? posTh(posR) : "");
+    if (c.k === "rank" && posR) return posTh(posR);
+    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.k === "rank" ? (st.mode === "g" ? "Rank" : "Rank 36 MIN") : c.l)}</th>`;
   }).join("");
   $("advBody").innerHTML = rows.map((p) => {
     const cell = (k) => {
@@ -912,12 +914,12 @@ function renderAdv() {
     };
     return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
       ${statRank ? `<td class="rank" style="color:var(--accent)">${statRank(p)}</td>` : ""}
-      <td class="rank">${now.rank.get(p.id)}</td>${posTd(posR, p)}
+      ${posR ? posTd(posR, p) : `<td class="rank">${now.rank.get(p.id)}</td>`}
       ${nameCell(p)}
       <td>${p.gp}</td><td>${fmt1(p.L.g.MIN)}</td>
       ${cell("USG")}${cell("PACE")}${cell("ORTG")}${cell("ASTTOV")}${cell("TPACE")}
       <td class="acts">${actions(p)}</td></tr>`;
-  }).join("") || EMPTY_ROW(ADV_COLS.length + (statCol ? 1 : 0) + (posR ? 1 : 0));
+  }).join("") || EMPTY_ROW(ADV_COLS.length + (statCol ? 1 : 0));
 
   // Teams: lower DRTG is better, so its shading is inverted
   const TCOLS = [{ k: "PACE", l: "PACE" }, { k: "OFF_RATING", l: "ORTG" }, { k: "DEF_RATING", l: "DRTG", inv: true }, { k: "NET_RATING", l: "NET" }];
