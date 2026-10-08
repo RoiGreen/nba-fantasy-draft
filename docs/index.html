@@ -903,7 +903,7 @@ function renderAdv() {
   const posR = positionRank();
   $("advHead").innerHTML = (statCol ? `<th class="nosort" scope="col">${esc(statCol.l)} Rank</th>` : "") + ADV_COLS.map((c) => {
     const cls = [st.advSort === c.k ? "sorted" : "", st.advSort === c.k && st.advAsc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : ""].join(" ");
-    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.l)}</th>` + (c.k === "rank" ? posTh(posR) : "");
+    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.k === "rank" ? (st.mode === "g" ? "Rank" : "Rank 36 MIN") : c.l)}</th>` + (c.k === "rank" ? posTh(posR) : "");
   }).join("");
   $("advBody").innerHTML = rows.map((p) => {
     const cell = (k) => {
