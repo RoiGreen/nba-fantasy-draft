@@ -50,6 +50,9 @@ CURRENT_LOGS = HERE / "nba_2026_27" / "game_logs_regular.csv"
 PRESEASON = 1026
 PRESEASON_LOGS = HERE / "nba_2026_27" / "game_logs_preseason.csv"
 INJURIES_CSV = HERE / "nba_2026_27" / "injuries.csv"  # ESPN injury list, from injuries.py
+POSITIONS_CSV = HERE / "nba_2026_27" / "positions_espn.csv"  # ESPN fantasy positions, from positions.py
+# For players ESPN does not list yet (mostly rookies): the NBA's broad position turned into fantasy positions
+NBA_TO_FANTASY = {"G": "PG/SG", "F": "SF/PF", "C": "C", "G-F": "SG/SF", "F-G": "SG/SF", "F-C": "PF/C", "C-F": "PF/C"}
 INJURIES_STAMP = HERE / "nba_2026_27" / "injuries_updated.txt"
 HEADSHOTS = DATA / "headshots"  # 40x40 WebP thumbnails from headshots.py
 # Head-to-head: the last N regular-season games against each opponent, 2025-26 and 2026-27
@@ -195,6 +198,22 @@ def attach_vs(players: list[dict]) -> None:
     print(f"Head-to-head lines for {sum(1 for p in players if 'vs' in p)} players from {len(logs)} games")
 
 
+def attach_positions(players: list[dict]) -> None:
+    """Fantasy positions (PG / SG / SF / PF / C) from ESPN, matched by name; the NBA's G / F / C as a fallback."""
+    espn = {}
+    if POSITIONS_CSV.exists():
+        espn = {name_key(r.PLAYER_NAME): r.POSITIONS for r in pd.read_csv(POSITIONS_CSV).itertuples(index=False)}
+    fallback = []
+    for p in players:
+        pos = espn.get(name_key(p["name"]))
+        if pos is None:
+            pos = NBA_TO_FANTASY.get(p.get("pos") or "")
+            fallback.append(p["name"])
+        p["pos"] = pos
+    print(f"Fantasy positions from ESPN for {len(players) - len(fallback)} players; "
+          f"from the NBA position for {len(fallback)}: {', '.join(fallback[:12])}")
+
+
 def attach_injuries(players: list[dict]) -> None:
     """Mark every player on ESPN's injury list (matched by name) with his status for the badge."""
     if not INJURIES_CSV.exists():
@@ -274,6 +293,7 @@ def main() -> None:
     free_agents = [p for p in players if not p.get("team26") and not p.get("rookie")]
     players = [p for p in players if p.get("team26") or p.get("rookie")]
     print(f"Left out {len(free_agents)} free agents")
+    attach_positions(players)
     attach_injuries(players)
     attach_vs(players)
     # Embedded, because claude.ai artifacts cannot load images from other sites

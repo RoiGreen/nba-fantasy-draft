@@ -441,9 +441,11 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
         <div class="field">
           <span class="lbl">עמדה</span>
           <div class="chips" id="posChips">
-            <button class="chip" data-pos="G" aria-pressed="false">Guard</button>
-            <button class="chip" data-pos="F" aria-pressed="false">Forward</button>
-            <button class="chip" data-pos="C" aria-pressed="false">Center</button>
+            <button class="chip" data-pos="PG" aria-pressed="false">PG</button>
+            <button class="chip" data-pos="SG" aria-pressed="false">SG</button>
+            <button class="chip" data-pos="SF" aria-pressed="false">SF</button>
+            <button class="chip" data-pos="PF" aria-pressed="false">PF</button>
+            <button class="chip" data-pos="C" aria-pressed="false">C</button>
           </div>
         </div>
         <div class="field">
@@ -706,6 +708,10 @@ function applySeasons() {
   }
 }
 
+// Fantasy positions: a player is eligible at each one in his "PG/SG" string
+const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
+const hasPos = (p, x) => (p.pos || "").split("/").includes(x);
+
 // ---------- state ----------
 const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 5,
@@ -774,7 +780,8 @@ function applySettings(s) {
   if (s.settingsVersion < 5) { s.sort = "zTotal"; s.asc = false; s.settingsVersion = 5; }  // default sort: Z, highest first
   if (["rankAlt", "gap", "trend", "vers", "weak"].includes(s.sort)) { s.sort = "rank"; s.asc = true; }
   delete s.onlySleepers;
-  Object.assign(st, s, { punts: new Set(s.punts || []), pos: new Set(s.pos || []) });
+  // Saved picks of the old Guard / Forward / Center filter are dropped
+  Object.assign(st, s, { punts: new Set(s.punts || []), pos: new Set((s.pos || []).filter((x) => POSITIONS.includes(x))) });
 }
 const settingsData = () => ({ ...st, punts: [...st.punts], pos: [...st.pos] });
 try {
@@ -867,7 +874,7 @@ function compute() {
 function passes(p) {
   const q = st.q.trim().toLowerCase();
   return (!q || p.name.toLowerCase().includes(q)) &&
-    (!st.pos.size || [...st.pos].some((x) => (p.pos || "").includes(x))) &&
+    (!st.pos.size || [...st.pos].some((x) => hasPos(p, x))) &&
     (!st.teamSel.length || st.teamSel.includes(p.team26 || "-")) &&
     (p.age == null || p.age <= st.maxAge) &&
     (st.rookies === "all" || (st.rookies === "only") === !!p.rookie) &&
@@ -1015,11 +1022,10 @@ function positionRank() {
   if (st.pos.size !== 1) return null;
   const pos = [...st.pos][0];
   const { list, now } = last;
-  const order = list.filter((p) => (p.pos || "").includes(pos)).sort((a, b) => now.rank.get(a.id) - now.rank.get(b.id));
+  const order = list.filter((p) => hasPos(p, pos)).sort((a, b) => now.rank.get(a.id) - now.rank.get(b.id));
   return { pos, rank: new Map(order.map((p, i) => [p.id, i + 1])) };
 }
-const POS_NAMES = { G: "Guard", F: "Forward", C: "Center" };
-const posTh = (pr) => pr ? `<th class="nosort" scope="col">${POS_NAMES[pr.pos]} Rank</th>` : "";
+const posTh = (pr) => pr ? `<th class="nosort" scope="col">${pr.pos} Rank</th>` : "";
 const posTd = (pr, p) => pr ? `<td class="rank" style="color:var(--mine)">${pr.rank.get(p.id) ?? "–"}</td>` : "";
 
 // Threshold on one category, typed by the user: a minimum, or a maximum for turnovers.

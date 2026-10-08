@@ -7,6 +7,7 @@ Writes ./nba_2026_27/ :
   game_logs_preseason.csv   one row per player per game (preseason)
   game_logs_regular.csv     same for the regular season (empty until opening night)
   injuries.csv              ESPN injury list (status, injury, expected return)
+  positions_espn.csv        ESPN fantasy positions (PG / SG / SF / PF / C)
 Also refreshes ../nba_2025_26/player_index_2026_27.csv (current rosters).
   last_update.txt           when the pull ran and the latest game date in each file
 
@@ -22,6 +23,7 @@ from nba_api.stats.endpoints import playergamelogs, playerindex, scheduleleaguev
 
 from headshots import ensure_headshots
 from injuries import pull_injuries
+from positions import pull_positions
 from nba_stats_2025_26 import fetch
 
 HERE = Path(__file__).parent
@@ -60,6 +62,9 @@ def main() -> None:
     print(msg)
     lines.append(msg)
     msg = pull_injuries()
+    print(msg)
+    lines.append(msg)
+    msg = pull_positions()
     print(msg)
     lines.append(msg)
     for season_type, tag in SEASON_TYPES.items():
