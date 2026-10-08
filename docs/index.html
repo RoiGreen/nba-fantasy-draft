@@ -313,7 +313,7 @@ table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px
   border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
 .cmpswap { align-self: center; font-size: 1.1rem; }
 .cmpchips { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.cmpchips li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; font-size: .88rem; padding: 4px 6px; border-radius: 6px; background: var(--sunk); }
+.cmpchips li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: .88rem; padding: 4px 6px; border-radius: 6px; background: var(--sunk); }
 .cmpchips .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmpchips small { color: var(--muted); font-family: var(--font-num); font-weight: 600; margin-inline-start: 6px; }
 .cmpchips .zv { font-family: var(--font-num); font-weight: 700; color: var(--muted); }
@@ -1736,7 +1736,6 @@ function renderCmpSide(side) {
     CMP_LOOKUP[side] = new Map(pool.map((p) => [pickValue(p, rank.get(p.id)), p.id]));
     $("cmpList" + S2).innerHTML = pool.slice(0, 500).map((p) => `<option value="${esc(pickValue(p, rank.get(p.id)))}"></option>`).join("");
   }
-  const val = (p) => { const z = zOf(p); return st.fmt === "cat" ? `Z ${z ? z.total.toFixed(2) : "–"}` : `${fmt1(p.F[st.mode])} FPTS`; };
   const who = (p) => `${esc(p.name)}<small>${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</small>`;
   const chips = $("cmpChips" + S2);
   chips.hidden = folded;
@@ -1745,12 +1744,12 @@ function renderCmpSide(side) {
       const sw = new Map(c.sw[side].filter(([o]) => o != null));
       chips.innerHTML = cmpBase(side).map((p) => {
         if (sw.has(p.id) && sw.get(p.id) == null) {
-          return `<li class="dropped"><span class="nm"><s>${esc(p.name)}</s> <small>הוסר</small></span><span></span>` +
+          return `<li class="dropped"><span class="nm"><s>${esc(p.name)}</s> <small>הוסר</small></span>` +
             `<button type="button" data-cmpundo="${side}:${p.id}" title="החזרה לקבוצה" aria-label="החזרת ${esc(p.name)}">↶</button></li>`;
         }
         if (sw.has(p.id)) {
           const q = PLAYER_BY_ID.get(sw.get(p.id));
-          return `<li class="swapped"><span class="nm"><s>${esc(p.name)}</s> ← ${who(q)}</span><span class="zv">${val(q)}</span>` +
+          return `<li class="swapped"><span class="nm"><s>${esc(p.name)}</s> ← ${who(q)}</span>` +
             `<button type="button" data-cmpundo="${side}:${p.id}" title="ביטול החילוף" aria-label="ביטול החילוף של ${esc(p.name)}">↶</button></li>`;
         }
         if (cmpSwapping && cmpSwapping.side === side && cmpSwapping.id === p.id) {
@@ -1758,16 +1757,16 @@ function renderCmpSide(side) {
             `<input data-cmpswin="${side}" list="cmpSwList" placeholder="שחקן במקומו…" autocomplete="off" aria-label="שחקן במקום ${esc(p.name)}">` +
             `<button type="button" data-cmpswcancel="1" title="ביטול" aria-label="ביטול">✕</button></li>`;
         }
-        return `<li class="edit"><span class="nm">${who(p)}</span><span class="zv">${val(p)}</span><span class="acts2">` +
+        return `<li class="edit"><span class="nm">${who(p)}</span><span class="acts2">` +
           `<button type="button" class="swbtn" data-cmpsw="${side}:${p.id}" title="להוריד אותו ולשים מישהו אחר במקומו">החלף</button>` +
           `<button type="button" data-cmpdrop="${side}:${p.id}" title="הסרה מהקבוצה" aria-label="הסרת ${esc(p.name)}">✕</button></span></li>`;
       }).join("") + c.sw[side].filter(([o, i]) => o == null && i != null).map(([, i]) => {
         const q = PLAYER_BY_ID.get(i);
-        return q ? `<li class="swapped"><span class="nm">+ ${who(q)}</span><span class="zv">${val(q)}</span>` +
+        return q ? `<li class="swapped"><span class="nm">+ ${who(q)}</span>` +
           `<button type="button" data-cmpundoadd="${side}:${q.id}" title="הסרת השחקן שנוסף" aria-label="הסרת ${esc(q.name)}">↶</button></li>` : "";
       }).join("");
     } else {
-      chips.innerHTML = cmpPlayers(side).map((p) => `<li><span class="nm">${who(p)}</span><span class="zv">${val(p)}</span>` +
+      chips.innerHTML = cmpPlayers(side).map((p) => `<li><span class="nm">${who(p)}</span>` +
         `<button type="button" data-cmprm="${side}:${p.id}" aria-label="הסרת ${esc(p.name)}" title="הסרה">✕</button></li>`).join("")
         || "";
     }
