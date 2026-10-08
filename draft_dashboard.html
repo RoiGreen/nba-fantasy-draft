@@ -670,12 +670,14 @@ function render() {
     (["rank", "name", "age"].includes(st.sort) ? null : COLS.find((c) => c.k === st.sort)?.l);
   const statRank = statLabel ? rankerFor(allRows.map(best)) : null;
 
+  const posR = positionRank();
+
   // header
   $("head").innerHTML = (statLabel ? `<th class="nosort" scope="col">${esc(statLabel)} RANK</th>` : "") + COLS.map((c) => {
     const label = c.k === "rank" ? (m === "g" ? "RANK" : "RANK 36 MIN") : c.l;
     const cls = [st.sort === c.k ? "sorted" : "", st.sort === c.k && st.asc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : "",
                  c.cat && st.fmt === "cat" && st.punts.has(c.k) ? "punted" : ""].join(" ");
-    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-k="${c.k}"`} scope="col">${esc(label)}</th>`;
+    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-k="${c.k}"`} scope="col">${esc(label)}</th>` + (c.k === "rank" ? posTh(posR) : "");
   }).join("");
 
   // body
@@ -688,12 +690,12 @@ function render() {
     }).join("");
     return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
       ${statRank ? `<td class="rank" style="color:var(--accent)">${statRank(best({ p, z }))}</td>` : ""}
-      <td class="rank">${rank}</td>
+      <td class="rank">${rank}</td>${posTd(posR, p)}
       ${nameCell(p)}
       <td>${p.age ?? "–"}</td><td>${p.gp}</td>${availCell(p)}<td>${fmt1(p.L.g.MIN)}</td>${cats}
       <td class="val">${z.total.toFixed(2)}</td><td class="val">${fmt1(p.F[m])}</td>
       <td class="acts">${actions(p)}</td></tr>`;
-  }).join("") || EMPTY_ROW(COLS.length + (statRank ? 1 : 0));
+  }).join("") || EMPTY_ROW(COLS.length + (statRank ? 1 : 0) + (posR ? 1 : 0));
 
   // counts
   const avail = list.filter((p) => !taken.has(p.id) && !mine.has(p.id)).length;
@@ -756,6 +758,17 @@ function rankerFor(values) {
     return lo + 1;
   };
 }
+
+// With exactly one position picked: each player's rank among that position (by the fantasy rank)
+function positionRank() {
+  if (st.pos.size !== 1) return null;
+  const pos = [...st.pos][0];
+  const { list, now } = last;
+  const order = list.filter((p) => (p.pos || "").includes(pos)).sort((a, b) => now.rank.get(a.id) - now.rank.get(b.id));
+  return { pos, rank: new Map(order.map((p, i) => [p.id, i + 1])) };
+}
+const posTh = (pr) => pr ? `<th class="nosort" scope="col">${pr.pos} RANK</th>` : "";
+const posTd = (pr, p) => pr ? `<td class="rank" style="color:var(--mine)">${pr.rank.get(p.id) ?? "–"}</td>` : "";
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
 
@@ -885,9 +898,10 @@ function renderAdv() {
     };
   }
 
+  const posR = positionRank();
   $("advHead").innerHTML = (statCol ? `<th class="nosort" scope="col">${esc(statCol.l)} RANK</th>` : "") + ADV_COLS.map((c) => {
     const cls = [st.advSort === c.k ? "sorted" : "", st.advSort === c.k && st.advAsc ? "asc" : "", c.nosort ? "nosort" : "", c.k === "act" ? "acts" : ""].join(" ");
-    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.l)}</th>`;
+    return `<th class="${cls}" ${c.nosort ? "" : `tabindex="0" data-ak="${c.k}"`} scope="col">${esc(c.l)}</th>` + (c.k === "rank" ? posTh(posR) : "");
   }).join("");
   $("advBody").innerHTML = rows.map((p) => {
     const cell = (k) => {
@@ -897,12 +911,12 @@ function renderAdv() {
     };
     return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
       ${statRank ? `<td class="rank" style="color:var(--accent)">${statRank(p)}</td>` : ""}
-      <td class="rank">${now.rank.get(p.id)}</td>
+      <td class="rank">${now.rank.get(p.id)}</td>${posTd(posR, p)}
       ${nameCell(p)}
       <td>${p.gp}</td><td>${fmt1(p.L.g.MIN)}</td>
       ${cell("USG")}${cell("PACE")}${cell("ORTG")}${cell("ASTTOV")}${cell("TPACE")}
       <td class="acts">${actions(p)}</td></tr>`;
-  }).join("") || EMPTY_ROW(ADV_COLS.length + (statCol ? 1 : 0));
+  }).join("") || EMPTY_ROW(ADV_COLS.length + (statCol ? 1 : 0) + (posR ? 1 : 0));
 
   // Teams: lower DRTG is better, so its shading is inverted
   const TCOLS = [{ k: "PACE", l: "PACE" }, { k: "OFF_RATING", l: "ORTG" }, { k: "DEF_RATING", l: "DRTG", inv: true }, { k: "NET_RATING", l: "NET" }];
