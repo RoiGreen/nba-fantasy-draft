@@ -131,7 +131,7 @@ td.val { font-weight: 700; font-size: 1.05rem; }
 td.up { color: var(--pos); } td.down { color: var(--neg); }
 td.cat.punted { opacity: .35; }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--sunk) 60%, transparent); }
-tr.is-taken td { opacity: .4; }
+tr.is-taken td:not(.acts), tr.is-mine td:not(.acts):not(.name), tr.is-mine td.name > * { opacity: .4; }
 tr.is-mine td.name { box-shadow: inset -4px 0 0 var(--mine); }
 tr.is-mine td.name .n { color: var(--mine); }
 .act { display: inline-flex; gap: 4px; }
@@ -709,8 +709,18 @@ function rebuildSets() {
     st.tagsMigrated = true;
   }
   const tagged = (k) => Object.keys(st.tags).filter((id) => st.tags[id] === k).map(Number);
-  taken = new Set([...draftTaken, ...tagged("t")]);
-  mine = new Set([...draftMine, ...tagged("m")]);
+  taken = new Set([...draftTaken, ...tagged("t").filter((id) => !draftMine.has(id))]);
+  mine = new Set([...draftMine, ...tagged("m").filter((id) => !draftTaken.has(id))]);
+}
+// What a player's marking menu shows: favorite, and taken / mine from either the draft room or a table tag.
+// A draft-room pick is shown ticked and locked (it is changed in the draft room).
+function markOf(id) {
+  const f = fav.has(id), m = mine.has(id), t = taken.has(id), draft = draftMine.has(id) || draftTaken.has(id);
+  return {
+    f, m, t, draft,
+    label: [f ? "★" : "", m ? "שלי" : t ? "נלקח" : ""].filter(Boolean).join(" · ") || "סימון",
+    cls: m ? "is-m" : t ? "is-t" : f ? "is-f" : "",
+  };
 }
 function picksFrom(d) {
   const raw = Array.isArray(d.picks) ? d.picks.filter((x) => x && typeof x.id === "number")
@@ -1082,14 +1092,15 @@ const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24p
 
 // One small dropdown per player with three ticks: favorites, taken, mine. Taken and mine exclude each other.
 let openActId = null;  // keep a player's menu open while ticking several boxes
+const DRAFT_LOCK = "נבחר בחדר הדראפט: משנים אותו שם";
+const BOTH_LOCK = "אי אפשר לסמן גם נלקח וגם שלי";
 function actions(p) {
-  const f = fav.has(p.id), tag = st.tags[p.id] || "", m = tag === "m", t = tag === "t";
-  const label = [f ? "★" : "", m ? "שלי" : t ? "נלקח" : ""].filter(Boolean).join(" · ") || "סימון";
-  const cls = m ? "is-m" : t ? "is-t" : f ? "is-f" : "";
-  const box = (k, text, on, off) => `<label class="amitem${off ? " off" : ""}"${off ? ` title="אי אפשר לסמן גם נלקח וגם שלי"` : ""}>` +
+  const { f, m, t, draft, label, cls } = markOf(p.id);
+  const box = (k, text, on, off) => `<label class="amitem${off ? " off" : ""}"${off ? ` title="${off}"` : ""}>` +
     `<input type="checkbox" data-am="${k}" data-id="${p.id}"${on ? " checked" : ""}${off ? " disabled" : ""}>${text}</label>`;
+  const lock = (k) => (draft ? DRAFT_LOCK : (k === "t" ? m : t) ? BOTH_LOCK : "");
   return `<details class="actpick ${cls}" data-pid="${p.id}"${openActId === p.id ? " open" : ""}><summary aria-label="סימון ${esc(p.name)}">${label}</summary><div class="actmenu">
-    ${box("f", "★ מועדפים", f, false)}${box("t", "נלקח", t, m)}${box("m", "שלי", m, t)}
+    ${box("f", "★ מועדפים", f, "")}${box("t", "נלקח", t, lock("t"))}${box("m", "שלי", m, lock("m"))}
   </div></details>`;
 }
 
@@ -1875,14 +1886,16 @@ document.addEventListener("change", (e) => {
 });
 let tablesStale = false;
 function refreshActMenu(det, id) {
-  const f = fav.has(id), tag = st.tags[id] || "", m = tag === "m", t = tag === "t";
-  det.className = `actpick ${m ? "is-m" : t ? "is-t" : f ? "is-f" : ""}`;
-  det.querySelector("summary").textContent = [f ? "★" : "", m ? "שלי" : t ? "נלקח" : ""].filter(Boolean).join(" · ") || "סימון";
+  const { f, m, t, draft, label, cls } = markOf(id);
+  det.className = `actpick ${cls}`;
+  det.querySelector("summary").textContent = label;
   for (const box of det.querySelectorAll("input[data-am]")) {
-    const k = box.dataset.am, off = (k === "t" && m) || (k === "m" && t);
-    box.checked = k === "f" ? f : tag === k;
-    box.disabled = off;
-    box.parentElement.classList.toggle("off", off);
+    const k = box.dataset.am;
+    const off = k === "f" ? "" : draft ? DRAFT_LOCK : (k === "t" ? m : t) ? BOTH_LOCK : "";
+    box.checked = k === "f" ? f : k === "m" ? m : t;
+    box.disabled = !!off;
+    box.parentElement.classList.toggle("off", !!off);
+    if (off) box.parentElement.title = off; else box.parentElement.removeAttribute("title");
   }
 }
 document.addEventListener("click", (e) => {
