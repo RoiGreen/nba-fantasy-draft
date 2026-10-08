@@ -1881,9 +1881,11 @@ document.addEventListener("change", (e) => {
   else if (box.checked) st.tags[id] = k;
   else delete st.tags[id];
   openActId = id;
+  // The sets first: the menu reads them (markOf), so refreshing it before would undo the tick
+  rebuildSets();
   // Update just this menu now; the tables are redrawn once, when the menu closes
   refreshActMenu(box.closest("details.actpick"), id);
-  rebuildSets(); saveSettings(); flushPicks();
+  saveSettings(); flushPicks();
   tablesStale = true;
 });
 let tablesStale = false;
