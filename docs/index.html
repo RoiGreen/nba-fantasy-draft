@@ -1686,7 +1686,7 @@ function renderCmpSide(side) {
   if (M.team) {
     const n = Math.max(st.teams, 1);
     const opts = Array.from({ length: n }, (_, i) =>
-      `<option value="${i}">${esc(teamName(i))} · ${picks.filter((x) => x.team === i).length} שחקנים</option>`).join("");
+      `<option value="${i}">${esc(teamName(i))}</option>`).join("");
     if (box.dataset.mode !== "teams") {
       box.innerHTML = `<select data-cmpteam="${side}" aria-label="${M[side]}"></select><select data-cmpteamadd="${side}" aria-label="הוספת שחקן לקבוצה"></select>`;
       box.dataset.mode = "teams";
@@ -1712,7 +1712,7 @@ function renderCmpSide(side) {
     const tsel = box.querySelector("[data-cmptt]"), psel = box.querySelector("[data-cmptp]");
     if (tsel !== document.activeElement) {
       tsel.innerHTML = Array.from({ length: n }, (_, i) =>
-        `<option value="${i}">${esc(teamName(i))} · ${picks.filter((x) => x.team === i).length} שחקנים</option>`).join("") +
+        `<option value="${i}">${esc(teamName(i))}</option>`).join("") +
         `<option value="free">שחקנים שלא נבחרו</option><option value="all">כל השחקנים</option>`;
       tsel.value = c[key];
     }
