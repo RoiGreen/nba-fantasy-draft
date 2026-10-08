@@ -547,16 +547,14 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
           <div class="field"><span class="lbl">שמות הקבוצות, לפי סדר הבחירה בסיבוב הראשון</span><div class="teamnames" id="teamNames"></div></div>
         </details>
         <div class="clock" id="clock"></div>
-        <div class="pickbar">
-          <input id="pickInput" list="availList" placeholder="חיפוש שחקן לבחירה…" autocomplete="off" aria-label="שחקן לבחירה">
-          <datalist id="availList"></datalist>
-          <select id="pickTeam" aria-label="הקבוצה שבוחרת"></select>
-          <button class="pickbtn" id="pickBtn" type="button">בחר</button>
-          <button class="danger" id="undoBtn" type="button">ביטול הבחירה האחרונה</button>
-        </div>
         <div class="pickfrom" id="quickPicks">
           <select id="favPick" aria-label="בחירה מהמועדפים שלי"></select>
           <select id="rankPick" aria-label="בחירה לפי דירוג"></select>
+        </div>
+        <div class="pickbar">
+          <select id="pickTeam" aria-label="הקבוצה שבוחרת"></select>
+          <button class="pickbtn" id="pickBtn" type="button">בחר</button>
+          <button class="danger" id="undoBtn" type="button">ביטול הבחירה האחרונה</button>
         </div>
         <div class="tbl-wrap short">
           <table class="dboard">
@@ -1341,6 +1339,7 @@ function showToast(text) {
 }
 const pickValue = (p, rank) => `${p.name} · ${p.team26 || "FA"}${rank ? ` · #${rank}` : ""}`;
 let PICK_LOOKUP = new Map();
+let pendingPick = null;  // {id, from}: the player chosen in one of the two dropdowns, waiting for "בחר"
 
 // Team-name inputs are rebuilt only when the number of teams changes, so typing keeps its focus
 function syncTeamNames() {
@@ -1389,7 +1388,6 @@ function renderDraft() {
   const rank = last.now.rank;
   const avail = last.list.filter((p) => !draftTaken.has(p.id) && !draftMine.has(p.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id));
   PICK_LOOKUP = new Map(avail.map((p) => [pickValue(p, rank.get(p.id)), p.id]));
-  $("availList").innerHTML = avail.slice(0, 400).map((p) => `<option value="${esc(pickValue(p, rank.get(p.id)))}"></option>`).join("");
   // My favorites: available ones can be picked with one click, picked ones show who took them
   const pickedBy = new Map(picks.map((x) => [x.id, x.team]));
   const favs = players.filter((p) => fav.has(p.id))
@@ -1404,10 +1402,12 @@ function renderDraft() {
   // Two dropdowns: picking a player fills the pick box, "בחר" confirms
   const opt = (p) => `<option value="${p.id}">${rank.has(p.id) ? `#${rank.get(p.id)} ` : ""}${esc(p.name)} · ${esc(p.pos || "")} · ${esc(p.team26 || "")}</option>`;
   const freeFavs = favs.filter((p) => !pickedBy.has(p.id) && rank.has(p.id));
+  if (pendingPick && pickedBy.has(pendingPick.id)) pendingPick = null;
   if ($("favPick") !== document.activeElement)
     $("favPick").innerHTML = `<option value="">★ המועדפים שלי (${freeFavs.length} זמינים)</option>` + freeFavs.map(opt).join("");
   if ($("rankPick") !== document.activeElement)
     $("rankPick").innerHTML = `<option value="">לפי דירוג (${avail.length} זמינים)</option>` + avail.slice(0, 300).map(opt).join("");
+  for (const k of ["favPick", "rankPick"]) if ($(k) !== document.activeElement) $(k).value = pendingPick && pendingPick.from === k ? String(pendingPick.id) : "";
 
   // Board: a column per team, each team's picks in the order it made them
   const byTeam = Array.from({ length: n }, () => []);
@@ -1864,12 +1864,11 @@ function makePick(id, team) {
   rebuildSets(); render(); flushPicks();
 }
 $("pickBtn").addEventListener("click", () => {
-  const id = PICK_LOOKUP.get($("pickInput").value);
-  if (!id) return showToast("בחר שחקן מהרשימה שנפתחת בזמן ההקלדה.");
+  if (!pendingPick) return showToast("בחר שחקן מהמועדפים או מהרשימה לפי דירוג.");
+  const id = pendingPick.id;
+  pendingPick = null;
   makePick(id, Number($("pickTeam").value));
-  $("pickInput").value = "";
 });
-$("pickInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("pickBtn").click(); } });
 // Checkboxes in the per-player menu: table tags only, never draft-room picks
 document.addEventListener("change", (e) => {
   const box = e.target.closest("input[data-am]");
@@ -1916,11 +1915,10 @@ document.addEventListener("click", (e) => {
 }, true);
 $("quickPicks").addEventListener("change", (e) => {
   const id = Number(e.target.value);
-  if (!id) return;
-  const pl = players.find((p) => p.id === id);
-  const value = [...PICK_LOOKUP].find(([, v]) => v === id)?.[0];
-  if (pl && value) { $("pickInput").value = value; $("pickBtn").focus(); }
-  e.target.value = "";
+  pendingPick = id ? { id, from: e.target.id } : null;
+  // One choice at a time: clear the other dropdown
+  for (const k of ["favPick", "rankPick"]) if (k !== e.target.id) $(k).value = "";
+  if (id) $("pickBtn").focus();
 });
 $("snake").addEventListener("change", (e) => { st.snake = e.target.checked; update(false); });
 $("undoBtn").addEventListener("click", () => {
