@@ -293,8 +293,9 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         </div>
         <div class="field"><label for="q">חיפוש שחקן</label><input type="search" id="q" placeholder="שם שחקן"></div>
         <div class="field">
-          <label for="minGp">מינימום משחקים <output id="minGpOut">50</output></label>
+          <label for="minGp">מינימום משחקים לעונה <output id="minGpOut">50</output></label>
           <input type="range" id="minGp" min="10" max="82" value="50">
+          <p class="hint">עונה שבה שיחק פחות משחקים לא נכנסת לחישוב שלו.</p>
         </div>
         <div class="field">
           <label for="minMin">מינימום דקות למשחק <output id="minMinOut">0</output></label>
@@ -460,8 +461,9 @@ function applySeasons() {
   const ys = chosenSeasons();
   for (const p of players) {
     if (p.rookie) { if (!p.L) setLines(p); p.has = true; continue; }
-    const chosen = ys.filter((y) => p.seasons[y]).map((y) => ({ y, ...p.seasons[y] }));
-    // No games in the chosen seasons: off the board, but keep numbers for his favorites / my-team entries
+    // A season counts only when he reached the games minimum in it (the minimum is per season)
+    const chosen = ys.filter((y) => p.seasons[y]?.gp >= st.minGp).map((y) => ({ y, ...p.seasons[y] }));
+    // No qualifying season: off the board, but keep numbers for his favorites / my-team entries
     p.has = chosen.length > 0;
     const lines = p.has ? chosen : Object.keys(p.seasons).map(Number).sort().map((y) => ({ y, ...p.seasons[y] }));
     const games = lines.reduce((a, l) => a + l.gp, 0);
@@ -592,7 +594,7 @@ const COLS = [
 let last = null;
 function compute() {
   applySeasons(); computeTeams(); computeDist();
-  const list = players.filter((p) => p.has && (p.rookie || p.gp >= st.minGp) && p.L.g.MIN >= st.minMin);
+  const list = players.filter((p) => p.has && p.L.g.MIN >= st.minMin);
   last = { list, now: rankAll(list, st.mode) };
 }
 
