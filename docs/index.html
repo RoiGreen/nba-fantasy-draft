@@ -227,6 +227,8 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .quick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .85rem; color: var(--muted); }
 .quick button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: .85rem; padding: 3px 10px; border-radius: 999px; cursor: pointer; }
 .quick button:hover { border-color: var(--accent); }
+.quick .qtitle { font-weight: 700; color: var(--fav); }
+.quick .qtaken { padding: 3px 10px; border-radius: 999px; background: var(--sunk); text-decoration: line-through; }
 table.dboard th, table.dboard td { font-family: var(--font-body); font-size: .82rem; white-space: nowrap; }
 table.dboard th.me, table.dboard td.me { background: color-mix(in srgb, var(--mine) 12%, transparent); }
 table.dboard td .pk { color: var(--muted); font-family: var(--font-num); margin-inline-end: 4px; }
@@ -1285,9 +1287,15 @@ function renderDraft() {
   const avail = last.list.filter((p) => !taken.has(p.id) && !mine.has(p.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id));
   PICK_LOOKUP = new Map(avail.map((p) => [pickValue(p, rank.get(p.id)), p.id]));
   $("availList").innerHTML = avail.slice(0, 400).map((p) => `<option value="${esc(pickValue(p, rank.get(p.id)))}"></option>`).join("");
-  $("quickPicks").innerHTML = avail.length
-    ? `<span>הבאים בדירוג:</span>` + avail.slice(0, 8).map((p) => `<button type="button" data-qpick="${p.id}" title="בחירה לקבוצה שבתיבה">#${rank.get(p.id)} ${esc(p.name)}</button>`).join("")
-    : "";
+  // My favorites: available ones can be picked with one click, picked ones show who took them
+  const pickedBy = new Map(picks.map((x) => [x.id, x.team]));
+  const favs = players.filter((p) => fav.has(p.id))
+    .sort((a, b) => (pickedBy.has(a.id) - pickedBy.has(b.id)) || ((rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9)));
+  $("quickPicks").innerHTML = `<span class="qtitle">★ המועדפים שלי</span>` + (favs.length
+    ? favs.map((p) => pickedBy.has(p.id)
+        ? `<span class="qtaken" title="נבחר על ידי ${esc(teamName(pickedBy.get(p.id)))}">${esc(p.name)} · ${esc(teamName(pickedBy.get(p.id)))}</span>`
+        : `<button type="button" data-qpick="${p.id}" title="בחירה לקבוצה שבתיבה">${rank.has(p.id) ? `#${rank.get(p.id)} ` : ""}${esc(p.name)}</button>`).join("")
+    : `<span>עוד אין מועדפים. סמן ★ ליד שחקנים בטבלאות.</span>`);
 
   // Board: a column per team, each team's picks in the order it made them
   const byTeam = Array.from({ length: n }, () => []);
