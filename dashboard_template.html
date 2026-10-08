@@ -135,6 +135,22 @@ tr.is-taken td { opacity: .4; }
 tr.is-mine td.name { box-shadow: inset -4px 0 0 var(--mine); }
 tr.is-mine td.name .n { color: var(--mine); }
 .act { display: inline-flex; gap: 4px; }
+.actpick { position: relative; display: inline-block; }
+.actpick summary { list-style: none; cursor: pointer; font-size: .8rem; font-weight: 600; padding: 3px 10px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--muted); white-space: nowrap; }
+.actpick summary::-webkit-details-marker { display: none; }
+.actpick summary::after { content: " ▾"; color: var(--muted); }
+.actpick.is-f summary { border-color: var(--fav); color: var(--ink); }
+.actpick.is-m summary { border-color: var(--mine); background: color-mix(in srgb, var(--mine) 14%, var(--surface)); color: var(--ink); }
+.actpick.is-t summary { border-color: var(--ink); background: var(--sunk); color: var(--ink); }
+.actmenu { position: absolute; top: calc(100% + 4px); inset-inline-end: 0; z-index: 6; min-width: 9.5em; display: grid; gap: 2px; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+.actmenu button { display: grid; grid-template-columns: 1.2em 1fr; align-items: center; gap: 4px; text-align: start; font: inherit; font-size: .85rem;
+  padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); cursor: pointer; }
+.actmenu button:hover:not(:disabled) { background: var(--sunk); }
+.actmenu button[aria-pressed="true"] { font-weight: 700; }
+.actmenu button:disabled { color: var(--muted); opacity: .45; cursor: not-allowed; }
+.actmenu .tick { color: var(--accent); font-weight: 700; }
 .actsel { font: inherit; font-family: var(--font-body); font-size: .8rem; font-weight: 600; padding: 3px 4px; border-radius: 6px;
   border: 1px solid var(--line); background: var(--surface); color: var(--muted); max-width: 8.5em; cursor: pointer; }
 .actsel.is-f { border-color: var(--fav); color: var(--ink); }
@@ -1041,13 +1057,15 @@ function scheduleLine(p) {
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
 
-// One dropdown per player: favorite, and at most one of taken / mine
-const ACT_OPTS = [["", "—"], ["f", "★ מועדף"], ["t", "נלקח"], ["m", "שלי"], ["ft", "★ מועדף + נלקח"], ["fm", "★ מועדף + שלי"]];
+// One small dropdown per player with three ticks: favorites, taken, mine. Taken and mine exclude each other.
 function actions(p) {
-  const v = (fav.has(p.id) ? "f" : "") + (mine.has(p.id) ? "m" : taken.has(p.id) ? "t" : "");
-  const cls = v.includes("m") ? "is-m" : v.includes("t") ? "is-t" : v ? "is-f" : "";
-  return `<select class="actsel ${cls}" data-act="${p.id}" aria-label="סימון ${esc(p.name)}">${
-    ACT_OPTS.map(([k, l]) => `<option value="${k}"${k === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+  const f = fav.has(p.id), m = mine.has(p.id), t = taken.has(p.id);
+  const label = [f ? "★" : "", m ? "שלי" : t ? "נלקח" : ""].filter(Boolean).join(" · ") || "סימון";
+  const cls = m ? "is-m" : t ? "is-t" : f ? "is-f" : "";
+  const item = (k, text, on, off) => `<button type="button" data-am="${k}" data-id="${p.id}" aria-pressed="${on}"${off ? ` disabled title="אי אפשר לסמן גם נלקח וגם שלי"` : ""}><span class="tick">${on ? "✓" : ""}</span>${text}</button>`;
+  return `<details class="actpick ${cls}"><summary aria-label="סימון ${esc(p.name)}">${label}</summary><div class="actmenu">
+    ${item("f", "★ מועדפים", f, false)}${item("t", "נלקח", t, m)}${item("m", "שלי", m, t)}
+  </div></details>`;
 }
 function setPlayerState(id, v) {
   const wantFav = v.includes("f"), want = v.includes("m") ? "m" : v.includes("t") ? "t" : "";
@@ -1804,10 +1822,23 @@ $("pickBtn").addEventListener("click", () => {
   $("pickInput").value = "";
 });
 $("pickInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("pickBtn").click(); } });
-document.addEventListener("change", (e) => {
-  const sel = e.target.closest("select[data-act]");
-  if (sel) setPlayerState(Number(sel.dataset.act), sel.value);
-});
+// Ticks in the per-player dropdown
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-am]");
+  if (b) {
+    e.stopPropagation();
+    if (b.disabled) return;
+    const id = Number(b.dataset.id);
+    let f = fav.has(id), state = mine.has(id) ? "m" : taken.has(id) ? "t" : "";
+    if (b.dataset.am === "f") f = !f;
+    else state = state === b.dataset.am ? "" : b.dataset.am;
+    setPlayerState(id, (f ? "f" : "") + state);
+    return;
+  }
+  // Only one dropdown open at a time; a click elsewhere closes it
+  const open = e.target.closest("details.actpick");
+  for (const d of document.querySelectorAll("details.actpick[open]")) if (d !== open) d.open = false;
+}, true);
 $("quickPicks").addEventListener("change", (e) => {
   const id = Number(e.target.value);
   if (!id) return;
