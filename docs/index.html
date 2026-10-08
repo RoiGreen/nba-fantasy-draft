@@ -299,8 +299,8 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <div class="field">
           <span class="lbl">סוג ליגה</span>
           <div class="seg" role="group" aria-label="סוג ליגה">
-            <button id="fmt9" aria-pressed="false" data-fmt="cat">9 קטגוריות</button>
-            <button id="fmtP" aria-pressed="true" data-fmt="pts">נקודות</button>
+            <button id="fmt9" aria-pressed="true" data-fmt="cat">9 קטגוריות</button>
+            <button id="fmtP" aria-pressed="false" data-fmt="pts">נקודות</button>
           </div>
         </div>
         <div class="field">
@@ -590,7 +590,7 @@ function applySeasons() {
 
 // ---------- state ----------
 const st = {
-  fmt: "pts", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 3,
+  fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 4,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
   sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2], vsOpp: "",
@@ -622,7 +622,7 @@ function applySettings(s) {
   delete s.minCat; delete s.minVal;
   delete s.minAst;
   if ((s.settingsVersion || 1) < 2) { s.teams = 8; s.settingsVersion = 2; }
-  if (s.settingsVersion < 3) { s.fmt = "pts"; s.settingsVersion = 3; }  // default ranking switched to FPTS
+  if (s.settingsVersion < 4) { s.fmt = "cat"; s.settingsVersion = 4; }  // default ranking is Z (9 categories)
   if (["rankAlt", "gap", "trend", "vers", "weak"].includes(s.sort)) { s.sort = "rank"; s.asc = true; }
   delete s.onlySleepers;
   Object.assign(st, s, { punts: new Set(s.punts || []), pos: new Set(s.pos || []) });
