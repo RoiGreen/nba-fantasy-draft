@@ -300,6 +300,61 @@ table.dboard td .dn { font-weight: 700; }
 table.dboard td[data-cell] { cursor: pointer; }
 table.dboard td[data-cell]:hover { outline: 1px dashed var(--accent); outline-offset: -3px; }
 table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px; }
+.cmpmodes { max-width: 640px; }
+.cmpsides { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: start; }
+@media (max-width: 700px) { .cmpsides { grid-template-columns: minmax(0, 1fr); } .cmpswap { justify-self: center; } }
+.cmpside { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 10px; display: grid; gap: 8px; border-top: 4px solid var(--ca); }
+.cmpside.sa { --ca: var(--accent); } .cmpside.sb { --ca: var(--mine); }
+.cmpside h3 { margin: 0; font-size: .95rem; color: var(--ca); }
+.cmppick { display: flex; gap: 6px; }
+.cmppick input { flex: 1; min-width: 0; font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.cmppick button, .cmpswap, .cmpbar-toggle button { font: inherit; font-weight: 600; font-size: .85rem; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.cmpswap { align-self: center; font-size: 1.1rem; }
+.cmpchips { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.cmpchips li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; font-size: .88rem; padding: 4px 6px; border-radius: 6px; background: var(--sunk); }
+.cmpchips .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmpchips small { color: var(--muted); font-family: var(--font-num); font-weight: 600; margin-inline-start: 6px; }
+.cmpchips .zv { font-family: var(--font-num); font-weight: 700; color: var(--muted); }
+.cmpchips button { border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; }
+.cmpchips button:hover { color: var(--neg); }
+.cmpchips .empty { display: block; background: none; color: var(--muted); }
+#cmpOut { display: grid; gap: 12px; }
+.cmpsum { display: flex; flex-wrap: wrap; gap: 8px; }
+.cmpsum .card { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 8px 14px; display: grid; gap: 2px; min-width: 150px; }
+.cmpsum .card .k { font-size: .8rem; color: var(--muted); font-weight: 600; }
+.cmpsum .card .v { font-family: var(--font-num); font-size: 1.15rem; font-weight: 700; }
+.cmpsec { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px; display: grid; gap: 10px; }
+.cmpsec h3 { margin: 0; font-size: 1.05rem; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.cmpsec h3 small { font-size: .8rem; color: var(--muted); font-weight: 600; }
+.cmpgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .cmpgrid { grid-template-columns: minmax(0, 1fr); } }
+table.cmpt th, table.cmpt td { padding: 5px 8px; }
+table.cmpt thead th { cursor: default; }
+table.cmpt th.ha { color: var(--accent); } table.cmpt th.hb { color: var(--mine); }
+table.cmpt td.win { font-weight: 700; }
+table.cmpt td.win.wa { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+table.cmpt td.win.wb { background: color-mix(in srgb, var(--mine) 14%, transparent); }
+table.cmpt td.dif.da { color: var(--accent); font-weight: 700; } table.cmpt td.dif.db { color: var(--mine); font-weight: 700; }
+table.cmpt tr.punted td { opacity: .4; text-decoration: line-through; }
+table.cmpt tr.tot td { border-top: 2px solid var(--line); font-weight: 700; }
+table.cmpt td.lbl { font-family: var(--font-num); font-weight: 700; text-align: start; }
+.cbars { display: grid; gap: 7px; }
+.cbrow { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 8px; align-items: center; }
+.cbrow .cbl { font-family: var(--font-num); font-weight: 700; font-size: .9rem; }
+.cbrow.punted { opacity: .35; }
+.cbpair { display: grid; gap: 2px; }
+.cbar { position: relative; height: 16px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.cbar i { position: absolute; inset-block: 0; inset-inline-start: 0; width: var(--w); background: var(--c); border-radius: 3px; }
+.cbar.z i { inset-inline-start: var(--x); }
+.cbar.z::after { content: ""; position: absolute; inset-block: 0; inset-inline-start: 50%; width: 1px; background: var(--muted); opacity: .6; }
+.cbar span { position: absolute; inset-block: 0; inset-inline-end: 6px; display: flex; align-items: center; font-family: var(--font-num); font-weight: 700; font-size: .78rem; }
+.cbar.a { --c: color-mix(in srgb, var(--accent) 70%, transparent); } .cbar.b { --c: color-mix(in srgb, var(--mine) 70%, transparent); }
+.cbar.best span { text-decoration: underline; }
+.cmpbar-toggle { display: inline-flex; gap: 4px; }
+.cmpbar-toggle button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.cmpkey { display: flex; gap: 14px; font-size: .82rem; color: var(--muted); }
+.cmpkey i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-inline-end: 5px; vertical-align: -1px; }
 .tipbox { position: fixed; z-index: 50; max-width: 280px; padding: 7px 10px; border-radius: 8px; background: var(--ink); color: var(--surface);
   font-size: .82rem; font-weight: 500; line-height: 1.45; pointer-events: none; box-shadow: 0 4px 14px rgb(0 0 0 / .18); }
 th[data-tip] { text-decoration: underline dotted color-mix(in srgb, var(--muted) 60%, transparent); text-underline-offset: 4px; }
@@ -518,6 +573,7 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
             <button role="tab" id="tabBoard" data-tab="board" aria-selected="true" aria-controls="viewBoard">נתונים כלליים</button>
             <button role="tab" id="tabAdv" data-tab="adv" aria-selected="false" aria-controls="viewAdv">נתונים מתקדמים</button>
             <button role="tab" id="tabDraft" data-tab="draft" aria-selected="false" aria-controls="viewDraft">חדר דראפט</button>
+            <button role="tab" id="tabCmp" data-tab="cmp" aria-selected="false" aria-controls="viewCmp">השוואה</button>
           </div>
         </div>
       </div>
@@ -597,6 +653,29 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
             <tfoot><tr id="dbFoot"></tr></tfoot>
           </table>
         </div>
+      </section>
+
+      <section class="view" id="viewCmp" role="tabpanel" aria-labelledby="tabCmp" hidden>
+        <div class="seg cmpmodes" role="group" aria-label="סוג ההשוואה">
+          <button type="button" data-cmpmode="players" aria-pressed="true">שחקן מול שחקן</button>
+          <button type="button" data-cmpmode="teams" aria-pressed="false">קבוצה מול קבוצה</button>
+          <button type="button" data-cmpmode="trade" aria-pressed="false">טרייד</button>
+          <button type="button" data-cmpmode="pickup" aria-pressed="false">פיק אפ</button>
+        </div>
+        <div class="cmpsides">
+          <div class="cmpside sa" id="cmpSideA">
+            <h3 id="cmpHA"></h3>
+            <div class="cmppick" id="cmpPickA"></div>
+            <ul class="cmpchips" id="cmpChipsA"></ul>
+          </div>
+          <button type="button" class="cmpswap" id="cmpSwap" title="החלפת הצדדים" aria-label="החלפת הצדדים">⇄</button>
+          <div class="cmpside sb" id="cmpSideB">
+            <h3 id="cmpHB"></h3>
+            <div class="cmppick" id="cmpPickB"></div>
+            <ul class="cmpchips" id="cmpChipsB"></ul>
+          </div>
+        </div>
+        <div id="cmpOut"></div>
       </section>
 
       <section class="view" id="viewAdv" role="tabpanel" aria-labelledby="tabAdv" hidden>
@@ -717,6 +796,7 @@ const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 5,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [], leagueName: "", teamNames: [], tags: {}, tagsMigrated: false,
+  cmp: { mode: "players", a: [], b: [], ta: 0, tb: 1, chart: "val" },
   sort: "zTotal", asc: false, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2], vsOpp: "",
 };
 // taken / mine = everything that marks a player as gone or on my team (table tags + draft picks);
@@ -780,6 +860,9 @@ function applySettings(s) {
   if (s.settingsVersion < 5) { s.sort = "zTotal"; s.asc = false; s.settingsVersion = 5; }  // default sort: Z, highest first
   if (["rankAlt", "gap", "trend", "vers", "weak"].includes(s.sort)) { s.sort = "rank"; s.asc = true; }
   delete s.onlySleepers;
+  const cm = s.cmp;
+  if (!cm || !["players", "teams", "trade", "pickup"].includes(cm.mode) || !Array.isArray(cm.a) || !Array.isArray(cm.b)) delete s.cmp;
+  else s.cmp = { ta: 0, tb: 1, chart: "val", ...cm };
   // Saved picks of the old Guard / Forward / Center filter are dropped
   Object.assign(st, s, { punts: new Set(s.punts || []), pos: new Set((s.pos || []).filter((x) => POSITIONS.includes(x))) });
 }
@@ -840,7 +923,7 @@ function rankAll(list, mode) {
   const byPts = [...list].sort((a, b) => b.F[mode] - a.F[mode]);
   const rCat = new Map(byCat.map((p, i) => [p.id, i + 1]));
   const rPts = new Map(byPts.map((p, i) => [p.id, i + 1]));
-  return { z, rank: st.fmt === "cat" ? rCat : rPts };
+  return { z, rank: st.fmt === "cat" ? rCat : rPts, pool };
 }
 
 // ---------- rendering ----------
@@ -960,7 +1043,7 @@ function render() {
   }).join("") || EMPTY_ROW(COLS.length + (statRank ? 1 : 0));
 
 
-  renderMine(); renderFav(); renderAdv(); renderDraft(); renderDist();
+  renderMine(); renderFav(); renderAdv(); renderDraft(); renderDist(); renderCmp();
 }
 
 // The team the shown stats come from: his team in the latest chosen season he played
@@ -1464,6 +1547,241 @@ function renderDraft() {
   renderPickEdit(byTeam);
 }
 
+// ---------- comparison tab: two sides, each one player or several ----------
+const CMP_MODES = {
+  players: { a: "שחקן א", b: "שחקן ב", max: 1 },
+  teams: { a: "קבוצה א", b: "קבוצה ב", team: true },
+  trade: { a: "אני נותן", b: "אני מקבל", max: 15 },
+  pickup: { a: "מוריד", b: "מוסיף", max: 1 },
+};
+// Advanced side of the comparison: role, pace and efficiency (several players: minutes-weighted)
+const CMP_ADV = [
+  { k: "MIN", l: "MIN", tip: "דקות למשחק" },
+  { k: "AVAIL", l: "זמינות", tip: "אחוז המשחקים ששיחק בעונות שנבחרו" },
+  { k: "USG", l: "USG%", tip: "אחוז מהפוזשנים של הקבוצה שהשחקן מסיים כשהוא על המגרש" },
+  { k: "PACE", l: "PACE", tip: "פוזשנים ל־48 דקות כשהשחקן על המגרש" },
+  { k: "ORTG", l: "ORTG", tip: "נקודות שהקבוצה קולעת ל־100 פוזשנים כשהשחקן על המגרש" },
+  { k: "ASTTOV", l: "AST/TOV", tip: "כמה אסיסטים השחקן נותן על כל איבוד" },
+  { k: "TPACE", l: "TEAM PACE", tip: "הקצב של הקבוצה שהשחקן ישחק בה ב־2026-27" },
+];
+const PLAYER_BY_ID = new Map(players.map((p) => [p.id, p]));
+let CMP_LOOKUP = { a: new Map(), b: new Map() };
+
+function zOf(p) {
+  const z = last.now.z.get(p.id);
+  if (z) return z;
+  last.zx = last.zx || new Map();
+  if (!last.zx.has(p.id)) last.zx.set(p.id, zScores([p], last.now.pool, st.mode).get(p.id));
+  return last.zx.get(p.id);
+}
+function cmpPlayers(side) {
+  const c = st.cmp;
+  if (c.mode === "teams") {
+    const t = side === "a" ? c.ta : c.tb;
+    return picks.filter((x) => x.team === t).map((x) => PLAYER_BY_ID.get(x.id)).filter(Boolean);
+  }
+  return c[side].map((id) => PLAYER_BY_ID.get(id)).filter(Boolean);
+}
+// Who can be added on each side; for a pickup, the player added comes from those not drafted
+function cmpPool(side) {
+  const all = players.filter((p) => p.L);
+  if (st.cmp.mode === "pickup") {
+    if (side === "a") { const m = all.filter((p) => mine.has(p.id)); return m.length ? m : all; }
+    return all.filter((p) => !taken.has(p.id) && !mine.has(p.id));
+  }
+  return all;
+}
+function cmpTotals(list) {
+  const m = st.mode, o = { n: list.length };
+  for (const k of ["PTS", "REB", "AST", "STL", "BLK", "FG3M", "TOV", "FGM", "FGA", "FTM", "FTA"]) o[k] = list.reduce((a, p) => a + p.L[m][k], 0);
+  o.FG_PCT = o.FGA ? o.FGM / o.FGA : 0;
+  o.FT_PCT = o.FTA ? o.FTM / o.FTA : 0;
+  const zs = list.map(zOf);
+  o.z = Object.fromEntries(CATS.map((c) => [c.k, zs.reduce((a, r) => a + (r ? r.z[c.k] : 0), 0)]));
+  o.Z = CATS.filter((c) => !st.punts.has(c.k)).reduce((a, c) => a + o.z[c.k], 0);
+  o.FPTS = list.reduce((a, p) => a + p.F[m], 0);
+  // Advanced: per game minutes, availability averaged, rates weighted by minutes
+  o.MIN = list.reduce((a, p) => a + p.L.g.MIN, 0);
+  const av = list.map(availPct).filter((v) => v != null);
+  o.AVAIL = av.length ? av.reduce((a, b) => a + b, 0) / av.length : null;
+  for (const k of ["USG", "PACE", "ORTG"]) {
+    const w = list.filter((p) => advVal(p, k) != null);
+    const tw = w.reduce((a, p) => a + p.L.g.MIN, 0);
+    o[k] = tw ? w.reduce((a, p) => a + advVal(p, k) * p.L.g.MIN, 0) / tw : null;
+  }
+  const tov = list.reduce((a, p) => a + p.L.g.TOV, 0);
+  o.ASTTOV = tov ? list.reduce((a, p) => a + p.L.g.AST, 0) / tov : null;
+  const tp = list.map((p) => advVal(p, "TPACE")).filter((v) => v != null);
+  o.TPACE = tp.length ? tp.reduce((a, b) => a + b, 0) / tp.length : null;
+  return o;
+}
+
+function renderCmpSide(side) {
+  const c = st.cmp, M = CMP_MODES[c.mode], S2 = side.toUpperCase();
+  const box = $("cmpPick" + S2);
+  $("cmpH" + S2).textContent = M[side];
+  const rank = last.now.rank;
+  if (M.team) {
+    const n = Math.max(st.teams, 1);
+    const opts = Array.from({ length: n }, (_, i) =>
+      `<option value="${i}">${esc(teamName(i))}${i === myIdx() ? " (אני)" : ""} · ${picks.filter((x) => x.team === i).length} שחקנים</option>`).join("");
+    if (box.dataset.mode !== "teams") { box.innerHTML = `<select data-cmpteam="${side}" aria-label="${M[side]}"></select>`; box.dataset.mode = "teams"; }
+    const sel = box.querySelector("select");
+    if (sel !== document.activeElement) { sel.innerHTML = opts; sel.value = String(side === "a" ? c.ta : c.tb); }
+  } else {
+    if (box.dataset.mode !== "players") {
+      box.innerHTML = `<input data-cmpin="${side}" list="cmpList${S2}" placeholder="חיפוש שחקן…" autocomplete="off" aria-label="שחקן ל${M[side]}">` +
+        `<datalist id="cmpList${S2}"></datalist><button type="button" data-cmpadd="${side}">הוסף</button>`;
+      box.dataset.mode = "players";
+    }
+    box.querySelector("input").setAttribute("aria-label", `שחקן ל${M[side]}`);
+    const pool = cmpPool(side).sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9));
+    CMP_LOOKUP[side] = new Map(pool.map((p) => [pickValue(p, rank.get(p.id)), p.id]));
+    $("cmpList" + S2).innerHTML = pool.slice(0, 500).map((p) => `<option value="${esc(pickValue(p, rank.get(p.id)))}"></option>`).join("");
+  }
+  const list = cmpPlayers(side);
+  $("cmpChips" + S2).innerHTML = list.map((p) => {
+    const z = zOf(p);
+    return `<li><span class="nm">${esc(p.name)}<small>${esc(p.pos || "–")} · ${esc(p.team26 || "FA")}</small></span>` +
+      `<span class="zv">${st.fmt === "cat" ? `Z ${z ? z.total.toFixed(2) : "–"}` : `${fmt1(p.F[st.mode])} FPTS`}</span>` +
+      (M.team ? "<span></span>" : `<button type="button" data-cmprm="${side}:${p.id}" aria-label="הסרת ${esc(p.name)}" title="הסרה">✕</button>`) + `</li>`;
+  }).join("") || `<li class="empty">${M.team ? "אין עדיין שחקנים בקבוצה הזו בחדר הדראפט." : "עוד לא נבחר שחקן."}</li>`;
+}
+
+function cmpBars(rows, A, B, kind) {
+  // kind "val": each pair scaled to the larger of the two; "z": centred on 0, scaled to the largest |Z| shown
+  const zmax = kind === "z" ? Math.max(0.5, ...rows.flatMap((r) => [Math.abs(A.z[r.k]), Math.abs(B.z[r.k])])) : 0;
+  return `<div class="cbars">` + rows.map((r) => {
+    const va = kind === "z" ? A.z[r.k] : A[r.k], vb = kind === "z" ? B.z[r.k] : B[r.k];
+    const fmtv = (v) => v == null ? "–" : kind === "z" ? (v >= 0 ? "+" : "") + v.toFixed(2) : r.fmt(v);
+    const lowBetter = kind !== "z" && r.k === "TOV";
+    const best = va == null || vb == null || va === vb ? "" : (va > vb) !== lowBetter ? "a" : "b";
+    const bar = (side, v) => {
+      if (kind === "z") {
+        const w = Math.abs(v) / zmax * 50;
+        return `<div class="cbar z ${side}${best === side ? " best" : ""}" style="--w:${w}%;--x:${v >= 0 ? 50 : 50 - w}%"><i></i><span>${fmtv(v)}</span></div>`;
+      }
+      const mx = Math.max(Math.abs(va ?? 0), Math.abs(vb ?? 0)) || 1;
+      return `<div class="cbar ${side}${best === side ? " best" : ""}" style="--w:${(Math.abs(v ?? 0) / mx * 100).toFixed(1)}%"><i></i><span>${fmtv(v)}</span></div>`;
+    };
+    return `<div class="cbrow${r.punted ? " punted" : ""}" title="${esc(r.tip || r.l)}"><span class="cbl">${r.l}</span><div class="cbpair">${bar("a", va)}${bar("b", vb)}</div></div>`;
+  }).join("") + `</div>`;
+}
+function cmpTable(rows, A, B, nameA, nameB) {
+  let wa = 0, wb = 0;
+  const body = rows.map((r) => {
+    const va = A[r.k], vb = B[r.k];
+    const lowBetter = r.k === "TOV";
+    const win = va == null || vb == null || Math.abs(va - vb) < 1e-9 ? "" : (va > vb) !== lowBetter ? "a" : "b";
+    if (r.cat && !r.punted) { if (win === "a") wa++; else if (win === "b") wb++; }
+    const diff = va == null || vb == null ? "–" : r.fmt(Math.abs(va - vb));
+    const cls = (side) => win === side ? ` class="win w${side}"` : "";
+    return `<tr class="${r.punted ? "punted" : ""}${r.tot ? " tot" : ""}"><td class="lbl" title="${esc(r.tip || "")}">${r.l}</td>` +
+      `<td${cls("a")}>${va == null ? "–" : r.fmt(va)}</td><td${cls("b")}>${vb == null ? "–" : r.fmt(vb)}</td>` +
+      `<td class="dif${win ? " d" + win : ""}">${win ? diff : "="}</td></tr>`;
+  }).join("");
+  return { wa, wb, html: `<table class="cmpt"><thead><tr><th class="nosort">קטגוריה</th><th class="nosort ha">${esc(nameA)}</th><th class="nosort hb">${esc(nameB)}</th><th class="nosort">הפרש</th></tr></thead><tbody>${body}</tbody></table>` };
+}
+
+function renderCmp() {
+  if (st.tab !== "cmp") return;
+  const c = st.cmp, M = CMP_MODES[c.mode];
+  for (const b of document.querySelectorAll("[data-cmpmode]")) b.setAttribute("aria-pressed", b.dataset.cmpmode === c.mode);
+  renderCmpSide("a"); renderCmpSide("b");
+  const LA = cmpPlayers("a"), LB = cmpPlayers("b");
+  const out = $("cmpOut");
+  if (!LA.length || !LB.length) {
+    out.innerHTML = `<p class="empty">${M.team ? "בחר שתי קבוצות שיש בהן שחקנים מחדר הדראפט." : `בחר שחקנים בשני הצדדים: ${M.a} ו${M.b}.`}</p>`;
+    return;
+  }
+  const A = cmpTotals(LA), B = cmpTotals(LB);
+  const name = (side, L) => M.team ? teamName(side === "a" ? c.ta : c.tb) : L.length === 1 ? L[0].name : M[side];
+  const nA = name("a", LA), nB = name("b", LB);
+  const per = st.mode === "g" ? "למשחק" : "ל־36 דקות";
+  const several = LA.length > 1 || LB.length > 1;
+
+  const catRows = CATS.map((k) => ({ k: k.k, l: k.l, cat: true, punted: st.punts.has(k.k), fmt: k.k.endsWith("_PCT") ? fmt3 : fmt1 }));
+  const gen = cmpTable([...catRows,
+    { k: "Z", l: "Z", tot: true, fmt: (v) => v.toFixed(2), tip: "סכום ה־Z של הקטגוריות (בלי Punt)" },
+    { k: "FPTS", l: "FPTS", tot: true, fmt: fmt1 }], A, B, nA, nB);
+  const advRows = CMP_ADV.map((r) => ({ ...r, fmt: r.k === "AVAIL" ? (v) => Math.round(v * 100) + "%" : r.k === "ASTTOV" ? (v) => v.toFixed(2) : fmt1 }));
+  const adv = cmpTable(advRows, A, B, nA, nB);
+  const lead = (x, y) => x > y ? nA : y > x ? nB : "שוויון";
+  const sign = (v) => (v >= 0 ? "+" : "") + v;
+  const chart = c.chart === "z" ? "z" : "val";
+
+  out.innerHTML = `
+    <div class="cmpsum">
+      <div class="card"><span class="k">קטגוריות (מתוך ${CATS.length - st.punts.size})</span><span class="v">${gen.wa} : ${gen.wb}</span><span class="k">${gen.wa === gen.wb ? "שוויון" : `${esc(lead(gen.wa, gen.wb))} מוביל`}</span></div>
+      <div class="card"><span class="k">Z</span><span class="v">${A.Z.toFixed(2)} : ${B.Z.toFixed(2)}</span><span class="k">הפרש ${sign((A.Z - B.Z).toFixed(2))}</span></div>
+      <div class="card"><span class="k">FPTS ${per}</span><span class="v">${fmt1(A.FPTS)} : ${fmt1(B.FPTS)}</span><span class="k">הפרש ${sign(fmt1(A.FPTS - B.FPTS))}</span></div>
+      ${several ? `<div class="card"><span class="k">שחקנים</span><span class="v">${LA.length} : ${LB.length}</span><span class="k">${LA.length !== LB.length ? "צד עם יותר שחקנים צובר יותר" : "&nbsp;"}</span></div>` : ""}
+    </div>
+    <div class="cmpkey"><span><i style="background:var(--accent)"></i>${esc(nA)}</span><span><i style="background:var(--mine)"></i>${esc(nB)}</span></div>
+    <section class="cmpsec">
+      <h3>נתונים כלליים <small>התפוקה ב־9 הקטגוריות, ${per}${several ? ", סכום השחקנים" : ""}</small>
+        <span class="cmpbar-toggle" role="group" aria-label="תצוגת הגרף">
+          <button type="button" data-cmpchart="val" aria-pressed="${chart === "val"}">ערכים</button>
+          <button type="button" data-cmpchart="z" aria-pressed="${chart === "z"}">Z</button>
+        </span></h3>
+      <div class="cmpgrid">
+        <div class="tbl-wrap short">${gen.html}</div>
+        ${cmpBars(catRows, A, B, chart)}
+      </div>
+    </section>
+    <section class="cmpsec">
+      <h3>נתונים מתקדמים <small>תפקיד, קצב ויעילות${several ? " (ממוצע משוקלל לפי דקות; MIN = סך הדקות)" : ""}</small></h3>
+      <div class="cmpgrid">
+        <div class="tbl-wrap short">${adv.html}</div>
+        ${cmpBars(advRows, A, B, "val")}
+      </div>
+    </section>`;
+}
+
+function cmpAdd(side) {
+  const inp = document.querySelector(`[data-cmpin="${side}"]`);
+  const id = CMP_LOOKUP[side].get(inp.value);
+  if (!id) return showToast("בחר שחקן מהרשימה שנפתחת בזמן ההקלדה.");
+  const c = st.cmp, M = CMP_MODES[c.mode];
+  if (M.max === 1) c[side] = [id];
+  else if (!c[side].includes(id)) c[side] = [...c[side], id].slice(-M.max);
+  inp.value = "";
+  saveSettings(); renderCmp();
+}
+$("viewCmp").addEventListener("click", (e) => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  const c = st.cmp;
+  if (t.dataset.cmpmode) {
+    c.mode = t.dataset.cmpmode;
+    const M = CMP_MODES[c.mode];
+    if (M.max) { c.a = c.a.slice(-M.max); c.b = c.b.slice(-M.max); }
+    if (M.team && c.ta === c.tb) c.tb = (c.ta + 1) % Math.max(st.teams, 1);
+  } else if (t.dataset.cmpadd) return cmpAdd(t.dataset.cmpadd);
+  else if (t.dataset.cmprm) {
+    const [side, id] = t.dataset.cmprm.split(":");
+    c[side] = c[side].filter((x) => x !== Number(id));
+  } else if (t.dataset.cmpchart) c.chart = t.dataset.cmpchart;
+  else if (t.id === "cmpSwap") { [c.a, c.b] = [c.b, c.a]; [c.ta, c.tb] = [c.tb, c.ta]; }
+  else return;
+  saveSettings(); renderCmp();
+});
+$("viewCmp").addEventListener("change", (e) => {
+  const sel = e.target.closest("[data-cmpteam]");
+  if (!sel) return;
+  st.cmp[sel.dataset.cmpteam === "a" ? "ta" : "tb"] = Number(sel.value);
+  saveSettings(); renderCmp();
+});
+// Picking a name from the list adds it right away; Enter adds what was typed
+$("viewCmp").addEventListener("input", (e) => {
+  const inp = e.target.closest("[data-cmpin]");
+  if (inp && CMP_LOOKUP[inp.dataset.cmpin].has(inp.value)) cmpAdd(inp.dataset.cmpin);
+});
+$("viewCmp").addEventListener("keydown", (e) => {
+  const inp = e.target.closest("[data-cmpin]");
+  if (inp && e.key === "Enter") { e.preventDefault(); cmpAdd(inp.dataset.cmpin); }
+});
+
 // ---------- header explanations on hover / keyboard focus ----------
 const tipBox = Object.assign(document.createElement("div"), { className: "tipbox", hidden: true, role: "tooltip" });
 document.body.append(tipBox);
@@ -1794,11 +2112,11 @@ function syncControls() {
   $("snake").checked = st.snake;
   for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", b.dataset.tab === st.tab);
   // The page title follows the open tab
-  $("pageTitle").textContent = { board: "נתונים כלליים", adv: "נתונים מתקדמים", draft: "חדר הדראפט" }[st.tab] || "נתונים כלליים";
+  $("pageTitle").textContent = { board: "נתונים כלליים", adv: "נתונים מתקדמים", draft: "חדר הדראפט", cmp: "השוואה" }[st.tab] || "נתונים כלליים";
   $("pageYear").hidden = st.tab !== "draft";  // the season shows only in the draft room
-  $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv"; $("viewDraft").hidden = st.tab !== "draft";
+  $("viewBoard").hidden = st.tab !== "board"; $("viewAdv").hidden = st.tab !== "adv"; $("viewDraft").hidden = st.tab !== "draft"; $("viewCmp").hidden = st.tab !== "cmp";
   // The table search does nothing in the draft room (it has its own pick box), so it is hidden there
-  document.querySelector(".topsearch").hidden = st.tab === "draft";
+  document.querySelector(".topsearch").hidden = st.tab === "draft" || st.tab === "cmp";
   $("onlyFav").checked = st.onlyFav;
   for (const b of document.querySelectorAll("[data-avs]")) b.setAttribute("aria-pressed", st.availSeasons.includes(Number(b.dataset.avs)));
   // Collapsed list shows the chosen seasons, newest first
