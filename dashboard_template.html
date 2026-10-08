@@ -224,6 +224,21 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .pickbar input { flex: 1 1 220px; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .pickbar select { font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .pickbtn { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 8px 18px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.rollers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.roller { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+.roller h3 { margin: 0; padding: 8px 12px; font-size: .9rem; border-bottom: 1px solid var(--line); }
+.roller:first-child h3 { color: var(--fav); }
+.roller ol { list-style: none; margin: 0; padding: 4px; max-height: 260px; overflow-y: auto; display: grid; gap: 2px; align-content: start; }
+.roller li { display: grid; grid-template-columns: 2.6em minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 4px 8px; border-radius: 6px; font-size: .88rem; }
+.roller li:hover { background: var(--sunk); }
+.roller .rk { font-family: var(--font-num); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.roller .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roller .nm small { color: var(--muted); font-family: var(--font-num); margin-inline-start: 6px; }
+.roller li.gone .nm { text-decoration: line-through; color: var(--muted); }
+.roller li.gone .by { font-size: .78rem; color: var(--muted); }
+.roller li.empty { display: block; color: var(--muted); }
+.roller button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: .8rem; font-weight: 700; padding: 2px 10px; border-radius: 6px; cursor: pointer; }
+.roller button:hover { border-color: var(--accent); color: var(--accent); }
 .quick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .85rem; color: var(--muted); }
 .quick button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: .85rem; padding: 3px 10px; border-radius: 999px; cursor: pointer; }
 .quick button:hover { border-color: var(--accent); }
@@ -508,7 +523,10 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
           <button class="pickbtn" id="pickBtn" type="button">בחר</button>
           <button class="danger" id="undoBtn" type="button">ביטול הבחירה האחרונה</button>
         </div>
-        <div class="quick" id="quickPicks"></div>
+        <div class="rollers" id="quickPicks">
+          <div class="roller"><h3>★ המועדפים שלי</h3><ol id="favRoll"></ol></div>
+          <div class="roller"><h3>לפי דירוג</h3><ol id="rankRoll"></ol></div>
+        </div>
         <div class="tbl-wrap short">
           <table class="dboard">
             <thead><tr id="dbHead"></tr></thead>
@@ -1290,11 +1308,17 @@ function renderDraft() {
   const pickedBy = new Map(picks.map((x) => [x.id, x.team]));
   const favs = players.filter((p) => fav.has(p.id))
     .sort((a, b) => (pickedBy.has(a.id) - pickedBy.has(b.id)) || ((rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9)));
-  $("quickPicks").innerHTML = `<span class="qtitle">★ המועדפים שלי</span>` + (favs.length
-    ? favs.map((p) => pickedBy.has(p.id)
-        ? `<span class="qtaken" title="נבחר על ידי ${esc(teamName(pickedBy.get(p.id)))}">${esc(p.name)} · ${esc(teamName(pickedBy.get(p.id)))}</span>`
-        : `<button type="button" data-qpick="${p.id}" title="בחירה לקבוצה שבתיבה">${rank.has(p.id) ? `#${rank.get(p.id)} ` : ""}${esc(p.name)}</button>`).join("")
-    : `<span>עוד אין מועדפים. סמן ★ ליד שחקנים בטבלאות.</span>`);
+  const row = (p) => {
+    const r = rank.has(p.id) ? rank.get(p.id) : "–";
+    const name = `<span class="nm">${esc(p.name)}<small>${esc(p.pos || "")} · ${esc(p.team26 || "")}</small></span>`;
+    return pickedBy.has(p.id)
+      ? `<li class="gone"><span class="rk">${r}</span>${name}<span class="by">${esc(teamName(pickedBy.get(p.id)))}</span></li>`
+      : `<li><span class="rk">${r}</span>${name}<button type="button" data-qpick="${p.id}" title="בחירה לקבוצה שבתיבה">בחר</button></li>`;
+  };
+  $("favRoll").innerHTML = favs.length ? favs.map(row).join("")
+    : `<li class="empty">עוד אין מועדפים. סמן ★ ליד שחקנים בטבלאות.</li>`;
+  $("rankRoll").innerHTML = avail.length ? avail.slice(0, 300).map(row).join("")
+    : `<li class="empty">אין שחקנים זמינים לפי הסינון הנוכחי.</li>`;
 
   // Board: a column per team, each team's picks in the order it made them
   const byTeam = Array.from({ length: n }, () => []);
