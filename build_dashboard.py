@@ -10,6 +10,8 @@ so rankings, the advanced tab, the team table and the importance panel all follo
 """
 
 import json
+import re
+import unicodedata
 from pathlib import Path
 
 import pandas as pd
@@ -43,6 +45,7 @@ SEASON_TAG = {2023: "_2023_24", 2024: "_2024_25", 2025: ""}  # 2025-26 files car
 # 2026-27 preseason, built from the daily game logs (daily_update.py); offered as its own season
 PRESEASON = 2026
 PRESEASON_LOGS = HERE / "nba_2026_27" / "game_logs_preseason.csv"
+INJURIES_CSV = HERE / "nba_2026_27" / "injuries.csv"  # ESPN injury list, from daily_update.py
 SEASONS = AVAIL_SEASONS + [PRESEASON]
 SEASON_FILES = HERE / "nba_2025_26" / "rookies"
 
@@ -158,6 +161,30 @@ def preseason_lines(rookie_ids: set[int]) -> dict[int, dict]:
     return out
 
 
+def name_key(name: str) -> str:
+    s = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode().lower()
+    s = re.sub(r"\b(jr|sr|ii|iii|iv)\b\.?", "", s)
+    return re.sub(r"[^a-z]", "", s)
+
+
+def attach_injuries(players: list[dict]) -> None:
+    """Mark every player on ESPN's injury list (matched by name) with his status for the badge."""
+    if not INJURIES_CSV.exists():
+        return
+    by_name = {name_key(p["name"]): p for p in players}
+    missing = []
+    for _, r in pd.read_csv(INJURIES_CSV).iterrows():
+        p = by_name.get(name_key(r["PLAYER_NAME"]))
+        if p is None:
+            missing.append(r["PLAYER_NAME"])
+            continue
+        clean = lambda v: None if pd.isna(v) else str(v)
+        p["hurt"] = {"s": clean(r["FANTASY_STATUS"]) or ("OUT" if r["STATUS"] == "Out" else "GTD"),
+                     "inj": clean(r["INJURY"]), "ret": clean(r["RETURN_DATE"]), "note": clean(r["COMMENT"])}
+    if missing:
+        print(f"Injuries not matched to a player ({len(missing)}): {', '.join(missing[:12])}")
+
+
 def season_players(roster: pd.DataFrame) -> list[dict]:
     """One record per player with a line for each season he played (per game, plus advanced)."""
     by_id: dict[int, dict] = {}
@@ -206,6 +233,7 @@ def main() -> None:
     for p in players:
         p["injured"] = p["id"] in injured_ids
     players += rookies({p["id"] for p in players})
+    attach_injuries(players)
 
     pd.DataFrame([{
         "PLAYER_NAME": p["name"], "TEAM_2026_27": p["team26"], "AGE": p["age"],

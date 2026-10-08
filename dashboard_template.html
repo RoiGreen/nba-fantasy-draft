@@ -195,6 +195,11 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
 .cfbtn { width: 30px; height: 34px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; font-size: 1.1rem; border-radius: 8px; cursor: pointer; }
 .cfbtn:hover { border-color: var(--accent); color: var(--accent); }
 
+.injpill { font-family: var(--font-num); font-size: .74rem; font-weight: 700; letter-spacing: .03em; padding: 1px 9px;
+  border-radius: 999px; white-space: nowrap; line-height: 1.5; }
+.injpill.out { background: var(--neg); color: #fff; }
+.injpill.gtd { border: 1.5px solid var(--neg); color: var(--neg); background: transparent; }
+
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
 .tabs button { border: 0; background: transparent; font: inherit; font-weight: 700; font-size: 1rem; color: var(--muted); padding: 8px 14px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
 .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
@@ -747,7 +752,7 @@ function nameCell(p) {
     : `${rk}${inj}${esc(p.team26)}`;
   const n = picks.findIndex((x) => x.id === p.id);
   const chip = n >= 0 ? `<span class="pickchip" title="בחירה ${n + 1} בדראפט">${pickLabel(n + 1)}</span>` : "";
-  return `<td class="name"><div class="nc"><span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span></div></td>`;
+  return `<td class="name"><div class="nc"><span class="n">${esc(p.name)}</span>${injuryPill(p)}${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span></div></td>`;
 }
 
 // Availability: share of the 82 games played over the last three seasons he was in the league
@@ -830,6 +835,21 @@ function syncCatFilters(force) {
     if (sel && sel !== document.activeElement) sel.value = f.cat;
     if (inp && inp !== document.activeElement) inp.value = f.val || 0;
   });
+}
+
+// Injury badge from ESPN's list: OUT filled; GTD (game-time decision) outlined with the usual 50%.
+// Official game-day statuses (from the season's injury report) use the league's customary odds.
+const INJ_LOOK = {
+  OUT: { cls: "out", text: "OUT" }, OFS: { cls: "out", text: "OUT לעונה" },
+  GTD: { cls: "gtd", text: "GTD 50%" }, PROBABLE: { cls: "gtd", text: "PROB 75%" },
+  QUESTIONABLE: { cls: "gtd", text: "Q 50%" }, DOUBTFUL: { cls: "gtd", text: "D 25%" },
+};
+function injuryPill(p) {
+  if (!p.hurt) return "";
+  const look = INJ_LOOK[p.hurt.s] || INJ_LOOK.GTD;
+  const ret = p.hurt.ret ? new Date(p.hurt.ret).toLocaleDateString("he-IL") : null;
+  const title = [p.hurt.inj, ret ? `חזרה משוערת: ${ret}` : null, p.hurt.note].filter(Boolean).join(" · ");
+  return `<span class="injpill ${look.cls}" title="${esc(title)}">${look.text}</span>`;
 }
 
 const EMPTY_ROW = (n) => `<tr><td colspan="${n}" class="name" style="padding:24px;color:var(--muted)">אין שחקנים שמתאימים לסינון. נסה להוריד את מינימום המשחקים או לנקות את החיפוש.</td></tr>`;
