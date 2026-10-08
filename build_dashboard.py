@@ -234,6 +234,10 @@ def main() -> None:
     for p in players:
         p["injured"] = p["id"] in injured_ids
     players += rookies({p["id"] for p in players})
+    # Free agents are left out; once one signs, the daily roster refresh gives him a team
+    free_agents = [p for p in players if not p.get("team26") and not p.get("rookie")]
+    players = [p for p in players if p.get("team26") or p.get("rookie")]
+    print(f"Left out {len(free_agents)} free agents")
     attach_injuries(players)
 
     pd.DataFrame([{

@@ -7,6 +7,7 @@ Writes ./nba_2026_27/ :
   game_logs_preseason.csv   one row per player per game (preseason)
   game_logs_regular.csv     same for the regular season (empty until opening night)
   injuries.csv              ESPN injury list (status, injury, expected return)
+Also refreshes ../nba_2025_26/player_index_2026_27.csv (current rosters).
   last_update.txt           when the pull ran and the latest game date in each file
 
 Each run re-downloads the whole season so far, so a missed day fills itself in and nothing
@@ -17,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-from nba_api.stats.endpoints import playergamelogs
+from nba_api.stats.endpoints import playergamelogs, playerindex
 
 from injuries import pull_injuries
 from nba_stats_2025_26 import fetch
@@ -43,6 +44,12 @@ def pull(season_type: str) -> pd.DataFrame:
 def main() -> None:
     OUT.mkdir(exist_ok=True)
     lines = [f"Pulled {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC"]
+    # Current rosters, so a free agent who signs shows up with his new team the next morning
+    roster = fetch(playerindex.PlayerIndex, season=SEASON)
+    roster.to_csv(HERE / "nba_2025_26" / "player_index_2026_27.csv", index=False, encoding="utf-8-sig")
+    msg = f"Rosters: {roster['TEAM_ABBREVIATION'].notna().sum()} players on a 2026-27 team"
+    print(msg)
+    lines.append(msg)
     msg = pull_injuries()
     print(msg)
     lines.append(msg)

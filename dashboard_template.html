@@ -280,8 +280,8 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <div class="field">
           <span class="lbl">סוג ליגה</span>
           <div class="seg" role="group" aria-label="סוג ליגה">
-            <button id="fmt9" aria-pressed="true" data-fmt="cat">9 קטגוריות</button>
-            <button id="fmtP" aria-pressed="false" data-fmt="pts">נקודות</button>
+            <button id="fmt9" aria-pressed="false" data-fmt="cat">9 קטגוריות</button>
+            <button id="fmtP" aria-pressed="true" data-fmt="pts">נקודות</button>
           </div>
         </div>
         <div class="field">
@@ -517,7 +517,7 @@ function applySeasons() {
 
 // ---------- state ----------
 const st = {
-  fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 2,
+  fmt: "pts", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 3,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
   sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2],
@@ -543,11 +543,13 @@ function applySettings(s) {
   if (s.onlyInj && !s.inj) s.inj = "only";
   if (!Array.isArray(s.roles)) s.roles = s.role ? [s.role] : [];
   if (!Array.isArray(s.teamSel)) s.teamSel = s.team ? [s.team] : [];
+  s.teamSel = s.teamSel.filter((x) => x !== "-");  // the free-agent option is gone
   if (s.minAst && !s.minVal) { s.minCat = "AST"; s.minVal = s.minAst; }
   if (!Array.isArray(s.catFilters)) s.catFilters = [{ cat: s.minCat || "PTS", val: s.minVal || 0 }];
   delete s.minCat; delete s.minVal;
   delete s.minAst;
   if ((s.settingsVersion || 1) < 2) { s.teams = 8; s.settingsVersion = 2; }
+  if (s.settingsVersion < 3) { s.fmt = "pts"; s.settingsVersion = 3; }  // default ranking switched to FPTS
   if (["rankAlt", "gap", "trend", "vers", "weak"].includes(s.sort)) { s.sort = "rank"; s.asc = true; }
   delete s.onlySleepers;
   Object.assign(st, s, { punts: new Set(s.punts || []), pos: new Set(s.pos || []) });
@@ -1325,8 +1327,7 @@ function update(recompute = true) {
 
 $("puntChips").innerHTML = CATS.map((c) => `<button class="chip punt" data-punt="${c.k}" aria-pressed="false">${c.l}</button>`).join("");
 const teams = [...new Set(players.map((p) => p.team26).filter(Boolean))].sort();
-$("teamChips").innerHTML = teams.map((t) => `<button class="chip" type="button" data-teamsel="${t}" aria-pressed="false">${t}</button>`).join("") +
-  `<button class="chip" type="button" data-teamsel="-" aria-pressed="false" title="ללא קבוצה ל־2026-27">FA</button>`;
+$("teamChips").innerHTML = teams.map((t) => `<button class="chip" type="button" data-teamsel="${t}" aria-pressed="false">${t}</button>`).join("");
 $("teamClear").addEventListener("click", () => { st.teamSel = []; update(false); });
 
 document.addEventListener("click", (e) => {
