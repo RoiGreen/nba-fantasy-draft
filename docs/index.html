@@ -278,6 +278,21 @@ table.dboard th.me, table.dboard td.me { background: color-mix(in srgb, var(--mi
 table.dboard .dcell { display: inline-flex; align-items: baseline; gap: 10px; }
 table.dboard td .pk { color: var(--accent); font-family: var(--font-num); font-weight: 700; font-variant-numeric: tabular-nums; }
 table.dboard td .dn { font-weight: 700; }
+.autobar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.autobar .lbl { font-size: .85rem; color: var(--muted); }
+.autobar button, .pickedit button { font: inherit; font-size: .85rem; font-weight: 600; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.autobar button:hover, .pickedit button:hover { border-color: var(--accent); color: var(--accent); }
+.dhint { margin: 0; font-size: .8rem; color: var(--muted); }
+.pickedit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid var(--accent);
+  border-radius: 10px; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+.pickedit .what { font-weight: 700; margin-inline-end: 6px; }
+.pickedit input, .pickedit select { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.pickedit input { flex: 1 1 200px; }
+.pickedit .rm { color: var(--neg); }
+table.dboard td[data-cell] { cursor: pointer; }
+table.dboard td[data-cell]:hover { outline: 1px dashed var(--accent); outline-offset: -3px; }
+table.dboard td.editing { outline: 2px solid var(--accent); outline-offset: -3px; }
 table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-top: 2px solid var(--line); }
 .toast { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); inset-inline: 0; margin: 0 auto; width: fit-content; max-width: 90%;
   z-index: 60; background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-weight: 600; direction: rtl; }
@@ -554,10 +569,18 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
           <button class="pickbtn" id="pickBtn" type="button">בחר</button>
           <button class="danger" id="undoBtn" type="button">ביטול הבחירה האחרונה</button>
         </div>
+        <div class="autobar" role="group" aria-label="בחירה אוטומטית">
+          <span class="lbl">בחירה אוטומטית (השחקן הזמין הכי גבוה בדירוג):</span>
+          <button type="button" data-auto="next">הבחירה הבאה</button>
+          <button type="button" data-auto="mine">עד התור שלי</button>
+          <button type="button" data-auto="all">כל הדראפט</button>
+        </div>
         <div class="pickfrom" id="quickPicks">
           <select id="favPick" aria-label="בחירה מהמועדפים שלי"></select>
           <select id="rankPick" aria-label="בחירה לפי דירוג"></select>
         </div>
+        <p class="dhint">לחיצה על משבצת בלוח פותחת עריכה: החלפת שחקן, העברה לקבוצה אחרת או הסרה. משבצת ריקה מוסיפה שחקן לקבוצה.</p>
+        <div class="pickedit" id="pickEdit" hidden></div>
         <div class="tbl-wrap short">
           <table class="dboard">
             <thead><tr id="dbHead"></tr></thead>
@@ -1342,6 +1365,7 @@ function showToast(text) {
 }
 const pickValue = (p, rank) => `${p.name} · ${p.team26 || "FA"}${rank ? ` · #${rank}` : ""}`;
 let PICK_LOOKUP = new Map();
+let editCell = null;  // {team, r}: the draft-board cell being edited
 
 // Team-name inputs are rebuilt only when the number of teams changes, so typing keeps its focus
 function syncTeamNames() {
@@ -1381,6 +1405,10 @@ function renderDraft() {
   clock.classList.toggle("you", wait === 0);
   clock.innerHTML = `${league}<span class="big">${wait === 0 ? "התור שלך" : `על השעון: ${esc(teamName(onClock))}`} · ${pickLabel(next)}</span>` +
     `<span>בחירה ${next} בסך הכול${wait ? ` · עוד ${wait} בחירות עד התור שלך (${pickLabel(myK)})` : ""}</span>`;
+  if (next > n * Math.max(st.roster, 1)) {
+    clock.classList.remove("you");
+    clock.innerHTML = `${league}<span class="big">הדראפט הושלם</span><span>${picks.length} בחירות, ${st.roster} לכל קבוצה. אפשר לערוך כל קבוצה בלחיצה על משבצת בלוח.</span>`;
+  }
 
   // Who picks next: the team on the clock unless the user chooses another
   const teamOpts = Array.from({ length: n }, (_, i) => `<option value="${i}">${esc(teamName(i))}${i === me ? " (אני)" : ""}</option>`).join("");
@@ -1418,14 +1446,111 @@ function renderDraft() {
   $("dbBody").innerHTML = Array.from({ length: rounds }, (_, r) => `<tr><td class="rank">${r + 1}</td>` + byTeam.map((t, i) => {
     const x = t[r];
     const pl = x && byId.get(x.id);
-    return `<td class="${i === me ? "me" : ""}">${pl ? `<span class="dcell"><span class="pk">${DRAFT.labels.get(x.id)}</span><span class="dn">${esc(pl.name)}</span></span>` : ""}</td>`;
+    const editing = editCell && editCell.team === i && editCell.r === r;
+    return `<td data-cell="${i},${r}" class="${i === me ? "me" : ""}${editing ? " editing" : ""}" title="${pl ? "עריכת הבחירה" : "הוספת שחקן לקבוצה"}">${pl ? `<span class="dcell"><span class="pk">${DRAFT.labels.get(x.id)}</span><span class="dn">${esc(pl.name)}</span></span>` : ""}</td>`;
   }).join("") + `</tr>`).join("");
   const zAll = last.now.z, m = st.mode;
   const value = (id) => { const pl = byId.get(id); if (!pl) return 0; return st.fmt === "cat" ? (zAll.get(id)?.total ?? 0) : (pl.F?.[m] ?? 0); };
   $("dbFoot").innerHTML = `<td>${st.fmt === "cat" ? "סה״כ Z" : "סה״כ FPTS"}</td>` +
     byTeam.map((t, i) => `<td class="${i === me ? "me" : ""}">${t.reduce((a, x) => a + value(x.id), 0).toFixed(1)}</td>`).join("");
   $("undoBtn").disabled = !picks.length;
+  renderPickEdit(byTeam);
 }
+
+// ---------- editing a board cell ----------
+function renderPickEdit(byTeam) {
+  const box = $("pickEdit");
+  if (!editCell || editCell.team >= byTeam.length) { editCell = null; box.hidden = true; box.dataset.key = ""; return; }
+  box.hidden = false;
+  const x = byTeam[editCell.team][editCell.r];
+  const key = `${editCell.team},${editCell.r},${x ? x.id : ""},${x ? x.team : ""},${st.teams}`;
+  if (box.dataset.key === key) return;  // unchanged: keep what is being typed
+  box.dataset.key = key;
+  const pl = x && players.find((p) => p.id === x.id);
+  const teamOpts = byTeam.map((_, i) => `<option value="${i}"${x && i === x.team ? " selected" : ""}>${esc(teamName(i))}</option>`).join("");
+  box.innerHTML = pl
+    ? `<span class="what">${DRAFT.labels.get(x.id)} · ${esc(teamName(x.team))}: ${esc(pl.name)}</span>
+       <input id="editInput" list="availList" placeholder="החלפה בשחקן אחר…" autocomplete="off" aria-label="שחקן להחלפה">
+       <button type="button" data-edit="replace">החלף</button>
+       <select id="editTeam" aria-label="העברה לקבוצה">${teamOpts}</select>
+       <button type="button" data-edit="move">העבר</button>
+       <button type="button" data-edit="remove" class="rm">הסר מהקבוצה</button>
+       <button type="button" data-edit="close">סגור</button>`
+    : `<span class="what">הוספת שחקן ל־${esc(teamName(editCell.team))}</span>
+       <input id="editInput" list="availList" placeholder="חיפוש שחקן…" autocomplete="off" aria-label="שחקן להוספה">
+       <button type="button" data-edit="add">הוסף</button>
+       <button type="button" data-edit="close">סגור</button>`;
+}
+$("dbBody").addEventListener("click", (e) => {
+  const td = e.target.closest("td[data-cell]");
+  if (!td) return;
+  const [team, r] = td.dataset.cell.split(",").map(Number);
+  editCell = editCell && editCell.team === team && editCell.r === r ? null : { team, r };
+  $("pickEdit").dataset.key = "";
+  renderDraft();
+  if (editCell) $("editInput")?.focus();
+});
+$("pickEdit").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-edit]");
+  if (!b) return;
+  const act = b.dataset.edit;
+  if (act === "close") { editCell = null; return renderDraft(); }
+  const mine = picks.filter((x) => x.team === editCell.team);
+  const x = mine[editCell.r];
+  const i = x ? picks.indexOf(x) : -1;
+  if (act === "add" || act === "replace") {
+    const id = PICK_LOOKUP.get($("editInput").value);
+    if (!id) return showToast("בחר שחקן מהרשימה שנפתחת בזמן ההקלדה.");
+    if (act === "add") { picks.push({ id, team: editCell.team }); editCell = null; }
+    else picks[i] = { id, team: x.team };
+  } else if (act === "move") {
+    const to = Number($("editTeam").value);
+    if (to === x.team) return;
+    // The player joins the end of the other team's list (its next round)
+    picks.splice(i, 1);
+    picks.push({ id: x.id, team: to });
+    editCell = null;
+  } else if (act === "remove") {
+    picks.splice(i, 1);
+    editCell = null;
+  }
+  $("pickEdit").dataset.key = "";
+  rebuildSets(); render(); flushPicks();
+});
+$("pickEdit").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.id === "editInput") { e.preventDefault(); $("pickEdit").querySelector('[data-edit="add"], [data-edit="replace"]').click(); }
+  if (e.key === "Escape") { editCell = null; renderDraft(); }
+});
+
+// ---------- auto-pick: the best available player by the current ranking, for the team on the clock ----------
+function autoPick(until) {
+  const n = Math.max(st.teams, 1), total = n * Math.max(st.roster, 1), me = myIdx();
+  const rank = last.now.rank;
+  const pool = last.list.filter((p) => rank.has(p.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id)).map((p) => p.id);
+  const used = new Set(picks.map((x) => x.id));
+  let made = 0, at = 0;
+  for (;;) {
+    const d = draftState();
+    if (d.next > total) break;
+    if (until === "mine" && d.onClock === me) break;
+    while (at < pool.length && used.has(pool[at])) at++;
+    if (at >= pool.length) break;
+    picks.push({ id: pool[at], team: d.onClock });
+    used.add(pool[at]);
+    made++;
+    if (until === "next") break;
+  }
+  if (!made) {
+    return showToast(until === "mine" && draftState().next <= total ? "זה כבר התור שלך." : "הדראפט מלא: לכל הקבוצות יש כבר את כל הבחירות.");
+  }
+  editCell = null;
+  rebuildSets(); render(); flushPicks();
+  showToast(`נבחרו אוטומטית ${made} שחקנים. "ביטול הבחירה האחרונה" מבטל אחד בכל פעם; "איפוס הדראפט" מוחק הכול.`);
+}
+document.querySelector(".autobar").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-auto]");
+  if (b) autoPick(b.dataset.auto);
+});
 
 function renderMine() {
   const order = new Map([...DRAFT.overall].map(([id, k]) => [id, k]));
