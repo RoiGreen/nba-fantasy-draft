@@ -71,6 +71,10 @@ def fetch_previous_seasons() -> None:
                 measure_type_detailed_defense=measure,
             )
             save(df, f"players_{measure.lower()}_pergame_regular_{tag}")
+        for st, st_tag in [("Regular Season", "regular"), ("Playoffs", "playoffs")]:
+            print(f"Player game logs {st} {season}")
+            df = fetch(playergamelogs.PlayerGameLogs, season_nullable=season, season_type_nullable=st)
+            save(df, f"player_game_logs_{st_tag}_{tag}")
         print(f"Teams Advanced PerGame {season}")
         df = fetch(
             leaguedashteamstats.LeagueDashTeamStats,

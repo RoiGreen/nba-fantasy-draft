@@ -47,6 +47,11 @@ PRESEASON = 2026
 PRESEASON_LOGS = HERE / "nba_2026_27" / "game_logs_preseason.csv"
 INJURIES_CSV = HERE / "nba_2026_27" / "injuries.csv"  # ESPN injury list, from injuries.py
 INJURIES_STAMP = HERE / "nba_2026_27" / "injuries_updated.txt"
+# Head-to-head: every regular-season and playoff game since 2023-24, for "last N games vs a team"
+VS_GAMES = 4
+GAME_LOG_FILES = [DATA / f"player_game_logs_{kind}{tag}.csv"
+                  for tag in ["_2023_24", "_2024_25", ""] for kind in ["regular", "playoffs"]] + \
+                 [HERE / "nba_2026_27" / "game_logs_regular.csv"]
 SEASONS = AVAIL_SEASONS + [PRESEASON]
 SEASON_FILES = HERE / "nba_2025_26" / "rookies"
 
@@ -168,6 +173,26 @@ def name_key(name: str) -> str:
     return re.sub(r"[^a-z]", "", s)
 
 
+def attach_vs(players: list[dict]) -> None:
+    """Each player's average over his last VS_GAMES games against every opponent he has faced."""
+    frames = [pd.read_csv(f, usecols=["PLAYER_ID", "GAME_DATE", "MATCHUP"] + STATS)
+              for f in GAME_LOG_FILES if f.exists() and f.stat().st_size > 100]
+    logs = pd.concat(frames, ignore_index=True)
+    logs = logs[logs["MIN"] > 0]
+    logs["OPP"] = logs["MATCHUP"].str.split().str[-1]
+    logs["GAME_DATE"] = pd.to_datetime(logs["GAME_DATE"])
+    logs = logs.sort_values("GAME_DATE", ascending=False)
+    last = logs.groupby(["PLAYER_ID", "OPP"]).head(VS_GAMES)
+    agg = last.groupby(["PLAYER_ID", "OPP"]).agg(n=("MIN", "size"), **{c: (c, "mean") for c in STATS}).reset_index()
+    by_player: dict[int, dict] = {}
+    for r in agg.itertuples(index=False):
+        by_player.setdefault(int(r.PLAYER_ID), {})[r.OPP] = [int(r.n)] + [round(float(getattr(r, c)), 1) for c in STATS]
+    for p in players:
+        if p["id"] in by_player:
+            p["vs"] = by_player[p["id"]]
+    print(f"Head-to-head lines for {sum(1 for p in players if 'vs' in p)} players from {len(logs)} games")
+
+
 def attach_injuries(players: list[dict]) -> None:
     """Mark every player on ESPN's injury list (matched by name) with his status for the badge."""
     if not INJURIES_CSV.exists():
@@ -239,6 +264,7 @@ def main() -> None:
     players = [p for p in players if p.get("team26") or p.get("rookie")]
     print(f"Left out {len(free_agents)} free agents")
     attach_injuries(players)
+    attach_vs(players)
 
     pd.DataFrame([{
         "PLAYER_NAME": p["name"], "TEAM_2026_27": p["team26"], "AGE": p["age"],
@@ -264,7 +290,7 @@ def main() -> None:
 
     inj_updated = INJURIES_STAMP.read_text(encoding="utf-8").strip() if INJURIES_STAMP.exists() else None
     payload = json.dumps({"stats": STATS, "seasons": SEASONS, "preseason": PRESEASON, "players": players,
-                          "teamSeasons": team_seasons, "injUpdated": inj_updated},
+                          "teamSeasons": team_seasons, "injUpdated": inj_updated, "vsGames": VS_GAMES},
                          ensure_ascii=False, separators=(",", ":"))
     html = html.replace("/*__DATA__*/null", payload)
     OUT.write_text(html, encoding="utf-8")
