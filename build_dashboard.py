@@ -40,6 +40,10 @@ ROOKIE_CSV = HERE / "rookie_projections_2026_27.csv"
 # Seasons the page can choose from, by start year, and their files
 AVAIL_SEASONS = [2023, 2024, 2025]
 SEASON_TAG = {2023: "_2023_24", 2024: "_2024_25", 2025: ""}  # 2025-26 files carry no suffix
+# 2026-27 preseason, built from the daily game logs (daily_update.py); offered as its own season
+PRESEASON = 2026
+PRESEASON_LOGS = HERE / "nba_2026_27" / "game_logs_preseason.csv"
+SEASONS = AVAIL_SEASONS + [PRESEASON]
 SEASON_FILES = HERE / "nba_2025_26" / "rookies"
 
 
@@ -137,6 +141,23 @@ def rookies(existing: set[int]) -> list[dict]:
     return out
 
 
+def preseason_lines(rookie_ids: set[int]) -> dict[int, dict]:
+    """Per-game 2026-27 preseason line per player from the game logs (games he actually played).
+    Drafted rookies are left out: they keep their model projection."""
+    if not PRESEASON_LOGS.exists():
+        return {}
+    logs = pd.read_csv(PRESEASON_LOGS)
+    logs = logs[(logs["MIN"] > 0) & ~logs["PLAYER_ID"].isin(rookie_ids)].sort_values("GAME_DATE")
+    out = {}
+    for pid, g in logs.groupby("PLAYER_ID"):
+        out[int(pid)] = {
+            "name": g["PLAYER_NAME"].iloc[-1],
+            "line": {"gp": len(g), "t": g["TEAM_ABBREVIATION"].iloc[-1],
+                     "s": [round(float(g[c].mean()), 2) for c in STATS]},
+        }
+    return out
+
+
 def season_players(roster: pd.DataFrame) -> list[dict]:
     """One record per player with a line for each season he played (per game, plus advanced)."""
     by_id: dict[int, dict] = {}
@@ -158,6 +179,16 @@ def season_players(roster: pd.DataFrame) -> list[dict]:
             if pid in adv.index:
                 line["adv"] = [round(float(adv.at[pid, c]), 3) for c in ADV]
             p["seasons"][str(y)] = line
+    rookie_ids = set(pd.read_csv(ROOKIE_CSV)["PLAYER_ID"].astype(int)) if ROOKIE_CSV.exists() else set()
+    for pid, pre in preseason_lines(rookie_ids).items():
+        on_roster = pid in roster.index
+        p = by_id.setdefault(pid, {
+            "id": pid, "name": pre["name"], "age": None,
+            "team26": roster.at[pid, "TEAM_ABBREVIATION"] if on_roster else None,
+            "pos": roster.at[pid, "POSITION"] if on_roster else None,
+            "seasons": {},
+        })
+        p["seasons"][str(PRESEASON)] = pre["line"]
     for p in by_id.values():
         p["team26"] = None if pd.isna(p["team26"]) else p["team26"]
         p["pos"] = None if pd.isna(p["pos"]) else p["pos"]
@@ -198,7 +229,7 @@ def main() -> None:
     for p in players:
         p["avail"] = avail.get(p["id"], [None] * len(AVAIL_SEASONS))
 
-    payload = json.dumps({"stats": STATS, "seasons": AVAIL_SEASONS, "players": players, "teamSeasons": team_seasons},
+    payload = json.dumps({"stats": STATS, "seasons": SEASONS, "preseason": PRESEASON, "players": players, "teamSeasons": team_seasons},
                          ensure_ascii=False, separators=(",", ":"))
     html = html.replace("/*__DATA__*/null", payload)
     OUT.write_text(html, encoding="utf-8")

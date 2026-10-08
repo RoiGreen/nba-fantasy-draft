@@ -264,9 +264,10 @@ tr.sel-team td { box-shadow: inset 0 -2px 0 var(--accent), inset 0 2px 0 var(--a
         <div class="field">
           <span class="lbl">עונות</span>
           <div class="chips" role="group" aria-label="העונות שמהן מחושבים כל הנתונים">
+            <button class="chip" data-avs="3" aria-pressed="false">2026-27 (Pre Season)</button>
             <button class="chip" data-avs="2" aria-pressed="true">2025-26</button>
-            <button class="chip" data-avs="1" aria-pressed="true">2024-25</button>
-            <button class="chip" data-avs="0" aria-pressed="true">2023-24</button>
+            <button class="chip" data-avs="1" aria-pressed="false">2024-25</button>
+            <button class="chip" data-avs="0" aria-pressed="false">2023-24</button>
           </div>
           <p class="hint">כל הנתונים בכל הטבלאות מחושבים מהעונות שנבחרו. כמה עונות = ממוצע משוקלל לפי משחקים.</p>
         </div>
@@ -489,7 +490,8 @@ function applySeasons() {
   for (const p of players) {
     if (p.rookie) { if (!p.L) setLines(p); p.has = true; continue; }
     // A season counts only when he reached the games minimum in it (the minimum is per season)
-    const chosen = ys.filter((y) => p.seasons[y]?.gp >= st.minGp).map((y) => ({ y, ...p.seasons[y] }));
+    // The preseason is ~5 games a team, so one game is enough there
+    const chosen = ys.filter((y) => p.seasons[y]?.gp >= (y === D.preseason ? 1 : st.minGp)).map((y) => ({ y, ...p.seasons[y] }));
     // No qualifying season: off the board, but keep numbers for his favorites / my-team entries
     p.has = chosen.length > 0;
     const lines = p.has ? chosen : Object.keys(p.seasons).map(Number).sort().map((y) => ({ y, ...p.seasons[y] }));
@@ -511,7 +513,7 @@ const st = {
   fmt: "cat", mode: "g", teams: 8, roster: 13, punts: new Set(), settingsVersion: 2,
   q: "", minGp: 50, minMin: 0, catFilters: [{ cat: "PTS", val: 0 }], pos: new Set(), teamSel: [], maxAge: 42,
   hideTaken: true, onlyMoved: false, onlyFav: false, inj: "all", rookies: "all", myPos: 1, snake: true, roles: [],
-  sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [0, 1, 2],
+  sort: "rank", asc: true, tab: "board", advSort: "USG", advAsc: false, teamSort: "PACE", teamAsc: false, availSeasons: [2],
 };
 let taken = new Set(), mine = new Set(), fav = new Set();
 // Every "taken" / "mine" click in draft order: [{ id, who: "t" | "m" }]
@@ -735,8 +737,8 @@ function nameCell(p) {
     ? `<span class="rk" title="רוקי, נבחר במקום ${p.pick}${p.college ? " מ־" + esc(p.college) : ""}. תחזית מודל: מכללה, מקום בדראפט וסקאוטינג.${range}${p.note ? " " + esc(p.note) : ""}">R #${p.pick}</span>`
     : "";
   // Badge when he has no games in the latest chosen season, so the numbers come from an older one
-  const newest = chosenSeasons().slice(-1)[0];
-  const inj = !p.rookie && p.srcSeason && p.srcSeason < newest
+  const newest = chosenSeasons().filter((y) => y !== D.preseason).slice(-1)[0];  // the preseason never triggers the badge
+  const inj = !p.rookie && newest && p.srcSeason && p.srcSeason < newest
     ? `<span class="inj" title="אין לו משחקים ב־${seasonLabel(newest)}. הנתונים מגיעים מעד ${seasonLabel(p.srcSeason)}, ב־${esc(from)}.">${seasonLabel(p.srcSeason)}</span>`
     : "";
   const team = !p.team26 ? `${rk}${inj}<span title="ללא קבוצה ל־2026-27">FA</span>`
