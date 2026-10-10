@@ -1,38 +1,48 @@
 <title>Fantasy 2026-2027</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Barlow+Condensed:wght@500;600;700&family=Secular+One&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Saira+Condensed:wght@500;600;700;800&display=swap">
 <style>
 /* Layout: draft-room console. Controls rail on the right (RTL), big board on the left, my roster under the controls. */
 :root {
-  --bg: #f2f4f7;
+  /* Prime Time: the arena at night (dark, the default) and a matinee light theme */
+  --bg: #eceff5;
   --surface: #ffffff;
-  --sunk: #e8ecf1;
-  --ink: #141920;
-  --muted: #5b6574;
-  --line: #d9dfe7;
-  --accent: #d2501b;
+  --surface-2: #f6f8fc;
+  --sunk: #e7ebf3;
+  --ink: #0d1424;
+  --muted: #56627a;
+  --line: #d6dce8;
+  --accent: #c2410c;
+  --accent-fill: #ff7a1a;
   --accent-ink: #ffffff;
-  --pos: #12855a;
-  --neg: #c93838;
-  --mine: #2a55c4;
-  --fav: #e0a50f;
+  --led: #ffb020;
+  --pos: #12a061;
+  --neg: #dc2f4a;
+  --mine: #2160e0;
+  --fav: #e5a000;
   --rookie: #7a3fc4;
-  --font-display: "Secular One", "Assistant", system-ui, sans-serif;
-  --font-body: "Assistant", system-ui, "Segoe UI", Arial, sans-serif;
-  --font-num: "Barlow Condensed", "Assistant", system-ui, sans-serif;
+  --glow-a: rgba(255, 122, 26, .08);
+  --glow-b: rgba(47, 107, 255, .08);
+  --shadow: 0 1px 2px rgba(13, 20, 36, .06), 0 8px 24px rgba(13, 20, 36, .06);
+  --court: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 940 500' fill='none' stroke='rgba(20,30,60,0.06)' stroke-width='2'%3E%3Crect x='1' y='1' width='938' height='498'/%3E%3Cpath d='M470 0V500'/%3E%3Ccircle cx='470' cy='250' r='60'/%3E%3Crect x='0' y='170' width='190' height='160'/%3E%3Crect x='750' y='170' width='190' height='160'/%3E%3Ccircle cx='190' cy='250' r='60'/%3E%3Ccircle cx='750' cy='250' r='60'/%3E%3Cpath d='M0 30H140A237.5 237.5 0 0 1 140 470H0'/%3E%3Cpath d='M940 30H800A237.5 237.5 0 0 0 800 470H940'/%3E%3C/svg%3E");
+  --font-display: "Rubik", system-ui, "Segoe UI", Arial, sans-serif;
+  --font-body: "Rubik", system-ui, "Segoe UI", Arial, sans-serif;
+  --font-num: "Saira Condensed", "Rubik", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e131a; --surface: #151c26; --sunk: #1c2531; --ink: #e7ebf1; --muted: #8f9cae;
-    --line: #263142; --accent: #ff7a3d; --accent-ink: #1a0d05; --pos: #39c38a; --neg: #ff6a6a;
-    --mine: #7393f2; --fav: #f2c14e; --rookie: #b48af5; color-scheme: dark;
+    --bg: #060a13; --surface: #0e1525; --surface-2: #131c30; --sunk: #0a101d; --line: #1f2b45; --ink: #eef2fa; --muted: #93a0bd;
+    --accent: #ff8a2a; --accent-fill: #ff7a1a; --accent-ink: #1a0b00; --led: #ffb020; --pos: #2fd38a; --neg: #ff5468;
+    --mine: #5b95ff; --fav: #ffc23d; --rookie: #b48af5; --glow-a: rgba(255, 122, 26, .13); --glow-b: rgba(56, 104, 255, .16);
+    --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 12px 32px rgba(0, 0, 0, .35); --court: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 940 500' fill='none' stroke='rgba(160,190,255,0.05)' stroke-width='2'%3E%3Crect x='1' y='1' width='938' height='498'/%3E%3Cpath d='M470 0V500'/%3E%3Ccircle cx='470' cy='250' r='60'/%3E%3Crect x='0' y='170' width='190' height='160'/%3E%3Crect x='750' y='170' width='190' height='160'/%3E%3Ccircle cx='190' cy='250' r='60'/%3E%3Ccircle cx='750' cy='250' r='60'/%3E%3Cpath d='M0 30H140A237.5 237.5 0 0 1 140 470H0'/%3E%3Cpath d='M940 30H800A237.5 237.5 0 0 0 800 470H940'/%3E%3C/svg%3E"); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0e131a; --surface: #151c26; --sunk: #1c2531; --ink: #e7ebf1; --muted: #8f9cae;
-  --line: #263142; --accent: #ff7a3d; --accent-ink: #1a0d05; --pos: #39c38a; --neg: #ff6a6a;
-  --mine: #7393f2; --fav: #f2c14e; --rookie: #b48af5; color-scheme: dark;
+  --bg: #060a13; --surface: #0e1525; --surface-2: #131c30; --sunk: #0a101d; --line: #1f2b45; --ink: #eef2fa; --muted: #93a0bd;
+    --accent: #ff8a2a; --accent-fill: #ff7a1a; --accent-ink: #1a0b00; --led: #ffb020; --pos: #2fd38a; --neg: #ff5468;
+    --mine: #5b95ff; --fav: #ffc23d; --rookie: #b48af5; --glow-a: rgba(255, 122, 26, .13); --glow-b: rgba(56, 104, 255, .16);
+    --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 12px 32px rgba(0, 0, 0, .35); --court: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 940 500' fill='none' stroke='rgba(160,190,255,0.05)' stroke-width='2'%3E%3Crect x='1' y='1' width='938' height='498'/%3E%3Cpath d='M470 0V500'/%3E%3Ccircle cx='470' cy='250' r='60'/%3E%3Crect x='0' y='170' width='190' height='160'/%3E%3Crect x='750' y='170' width='190' height='160'/%3E%3Ccircle cx='190' cy='250' r='60'/%3E%3Ccircle cx='750' cy='250' r='60'/%3E%3Cpath d='M0 30H140A237.5 237.5 0 0 1 140 470H0'/%3E%3Cpath d='M940 30H800A237.5 237.5 0 0 0 800 470H940'/%3E%3C/svg%3E"); color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -428,9 +438,108 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
 .auth-msg.ok { color: var(--pos); }
 .signout { border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: .8rem; padding: 2px 10px; border-radius: 6px; cursor: pointer; }
 
+/* ===== Prime Time ===== */
+body { margin: 0; background: radial-gradient(1100px 520px at 88% -8%, var(--glow-a), transparent 62%),
+  radial-gradient(900px 480px at 8% -6%, var(--glow-b), transparent 62%), var(--bg); background-attachment: fixed; min-height: 100vh; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--court) center 62% / min(1500px, 140vw) auto no-repeat; }
+.wrap { max-width: 1640px; padding-block: 14px 48px; }
+
+/* scoreboard header: night in both themes, like a real arena board */
+header.jumbo { display: block; position: relative; overflow: hidden; border-radius: 16px; color: #eef2fa; border: 1px solid #1d2944;
+  background: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1.3px) 0 0 / 4px 4px,
+    radial-gradient(600px 220px at 85% 0%, rgba(255,122,26,.22), transparent 70%),
+    radial-gradient(520px 220px at 12% 0%, rgba(56,104,255,.22), transparent 70%), linear-gradient(180deg, #0c1427, #070b16);
+  box-shadow: 0 18px 40px rgba(4, 8, 20, .3); }
+.jumbo-in { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px 24px; padding: 14px 20px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand .ball { width: 40px; height: 40px; flex: none; }
+.jumbo h1 { font-family: var(--font-body); font-weight: 800; font-size: 1.6rem; color: #eef2fa; }
+.jumbo h1 .yr { color: #ffb020; text-shadow: 0 0 14px rgba(255,176,32,.5); }
+.board { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.tile { min-width: 104px; padding: 7px 14px 8px; border-radius: 10px; background: rgba(0,0,0,.42); border: 1px solid rgba(255,255,255,.07); text-align: center; }
+.tile .k { font-family: var(--font-num); font-weight: 700; font-size: .7rem; letter-spacing: .22em; color: #8d9ab8; }
+.tile .v { font-family: var(--font-num); font-weight: 800; font-size: 1.9rem; line-height: 1.05; color: #ffb020; text-shadow: 0 0 16px rgba(255,176,32,.5); font-variant-numeric: tabular-nums; }
+.tile .v.red { color: #ff5468; text-shadow: 0 0 16px rgba(255,84,104,.45); }
+.tile .h { font-size: .72rem; color: #aab5cf; }
+.who { display: grid; gap: 4px; justify-items: end; align-content: center; grid-template-columns: auto auto; align-items: center; column-gap: 12px; }
+.who > .iconbtn { grid-row: 1 / span 3; grid-column: 2; }
+.who .save-state { color: #aab5cf; }
+.who .viewer { color: #eef2fa; }
+.who .signout { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.15); color: #eef2fa; }
+.iconbtn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: #eef2fa; cursor: pointer; font-size: 1.05rem; display: grid; place-items: center; }
+.iconbtn:hover { background: rgba(255,255,255,.12); }
+.ticker { display: flex; align-items: center; gap: 8px; padding: 8px 20px; border-top: 1px solid rgba(255,255,255,.07); background: rgba(0,0,0,.32); overflow-x: auto; scrollbar-width: none; }
+.ticker::-webkit-scrollbar { display: none; }
+.ticker .lbl { font-family: var(--font-num); font-weight: 800; letter-spacing: .2em; font-size: .76rem; color: #ff8a2a; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.ticker .lbl::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #ff3b3b; box-shadow: 0 0 10px #ff3b3b; }
+.game { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border-radius: 8px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.07);
+  white-space: nowrap; direction: ltr; font-family: var(--font-num); font-weight: 700; font-size: .9rem; letter-spacing: .04em; color: #eef2fa; }
+.game .tm { display: inline-flex; align-items: center; gap: 5px; }
+.game .sw { width: 5px; height: 14px; border-radius: 2px; background: linear-gradient(var(--c1) 0 60%, var(--c2) 60%); box-shadow: 0 0 0 1px rgba(255,255,255,.15); }
+.game .at { color: #6f7c99; font-weight: 600; }
+.game .time { color: #ffb020; }
+@media (max-width: 900px) {
+  .jumbo-in { grid-template-columns: 1fr auto; }
+  .board { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
+  .tile { min-width: 0; flex: 1 1 70px; padding: 6px 8px; }
+  .tile .v { font-size: 1.5rem; }
+}
+
+/* panels, controls */
+.panel { background: color-mix(in srgb, var(--surface) 94%, transparent); border-radius: 14px; box-shadow: var(--shadow); }
+.panel h2 { display: flex; align-items: center; gap: 8px; font-size: .82rem; letter-spacing: .04em; font-weight: 800; }
+.panel h2::before { content: ""; width: 14px; height: 3px; border-radius: 2px; background: var(--accent-fill); flex: none; }
+.seg { border: 1px solid var(--line); border-radius: 10px; }
+.seg button[aria-pressed="true"] { background: var(--accent-fill); color: #1a0b00; box-shadow: 0 4px 14px rgba(255,122,26,.3); }
+.chip { background: var(--surface-2); letter-spacing: .03em; }
+input[type="search"], input[type="number"], select { background: var(--surface-2); border-radius: 10px; }
+.topsearch input { background: var(--surface); border-radius: 12px; }
+input[type="range"] { accent-color: var(--accent-fill); }
+
+/* tabs: a segmented bar with an orange underline on the open tab */
+.tabhead { border-bottom: 0; }
+.tabs { padding: 4px; border-radius: 12px; background: color-mix(in srgb, var(--surface) 85%, transparent); border: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.tabs button { border-radius: 9px; border-bottom: 0; margin-bottom: 0; padding: 8px 16px; white-space: nowrap; }
+.tabs button[aria-selected="true"] { color: var(--ink); background: var(--surface-2); box-shadow: inset 0 -3px 0 var(--accent-fill), 0 6px 18px rgba(255,122,26,.14); }
+
+/* tables */
+.tbl-wrap { border-radius: 14px; box-shadow: var(--shadow); }
+thead th { background: var(--surface-2); font-weight: 800; letter-spacing: .06em; padding-block: 9px; }
+thead th.sorted { color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent-fill); }
+thead th.sorted::after { color: var(--accent); }
+td { font-weight: 600; }
+td.rank.top { color: var(--led); text-shadow: 0 0 12px color-mix(in srgb, var(--led) 45%, transparent); }
+td.val { font-size: 1.1rem; font-weight: 800; }
+tbody tr:hover td { background-color: color-mix(in srgb, var(--accent-fill) 6%, transparent); }
+td.name { box-shadow: inset -3px 0 0 var(--tc, transparent); }
+tr.is-mine td.name { box-shadow: inset -5px 0 0 var(--mine); }
+td.name .avatar { width: 34px; height: 34px; border: 2px solid var(--line); }
+td.name .n { font-weight: 700; }
+
+/* numbers read left to right inside the RTL page: .569 not 569., -0.42 not 0.42-, FG% not %FG */
+td:not(.name):not(.lbl):not(.acts), thead th, tfoot td { direction: ltr; unicode-bidi: plaintext; }
+table.dboard td { direction: rtl; unicode-bidi: normal; }
+.zhelp td { direction: rtl; unicode-bidi: normal; }
+.num, .vbar span, .cmpdelta .dv span, .catbar .v, .pickchip, table.dboard .pk { direction: ltr; unicode-bidi: isolate; }
+td.lbl, .vl, .chip, select, .cbl { unicode-bidi: plaintext; }
+td.lbl { text-align: right; }
+:root[data-theme="light"] td.rank.top { color: var(--accent); text-shadow: none; }
+
+/* draft room and comparison */
+.dconsole, .cmpside, .cmpsec, .cmpsum .card, .dsetup { border-radius: 14px; box-shadow: var(--shadow); }
+.clock { background: var(--surface-2); border: 1px solid var(--line); }
+.clock .big { font-size: 1.1rem; }
+.pickbtn { background: var(--accent-fill); color: #1a0b00; }
+.cmpsum .card .v { font-size: 1.3rem; }
+.vbar.a { --c: color-mix(in srgb, var(--accent-fill) 85%, transparent); }
+
 @media (prefers-reduced-motion: no-preference) { .seg button, .chip, .act button { transition: background-color .12s, color .12s; } }
 </style>
 
+<script>
+  try { document.documentElement.dataset.theme = localStorage.getItem("fantasy-theme") || "dark"; }
+  catch (e) { document.documentElement.dataset.theme = "dark"; }
+</script>
 <div class="auth" id="auth" hidden>
   <form class="auth-card" id="authForm" novalidate>
     <h2>חדר הדראפט <span class="yr">2026-27</span></h2>
@@ -449,15 +558,21 @@ table.dboard tfoot td { font-weight: 700; font-family: var(--font-num); border-t
 
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="wrap">
-  <header class="top">
-    <div>
-      <h1><span id="pageTitle">נתונים כלליים</span> <span class="yr" id="pageYear" hidden>2026-27</span></h1>
+  <header class="top jumbo">
+    <div class="jumbo-in">
+      <div class="brand">
+        <svg class="ball" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="#ff7a1a"/><g fill="none" stroke="#1a0b00" stroke-width="2" stroke-linecap="round" opacity=".8"><path d="M3 24h42M24 3v42"/><path d="M10 9.5c5.5 4 8.5 9 8.5 14.5S15.5 34.5 10 38.5M38 9.5c-5.5 4-8.5 9-8.5 14.5s3 10.5 8.5 14.5"/></g></svg>
+        <h1><span id="pageTitle">נתונים כלליים</span> <span class="yr" id="pageYear" hidden>2026-27</span></h1>
+      </div>
+      <div class="board" id="scoreboard" aria-label="לוח תוצאות"></div>
+      <div class="who">
+        <span class="viewer" id="viewer" hidden><img id="viewerAvatar" alt="" hidden><span id="viewerName"></span><button class="signout" id="signOutBtn" type="button" hidden>התנתקות</button></span>
+        <span class="save-state" id="saveState">הבחירות נשמרות בדפדפן הזה</span>
+        <span class="save-state" id="injStamp" hidden></span>
+        <button class="iconbtn" id="themeBtn" type="button" aria-label="מצב בהיר או כהה" title="מצב בהיר או כהה"></button>
+      </div>
     </div>
-    <div style="display:grid;gap:4px;justify-items:end">
-      <span class="viewer" id="viewer" hidden><img id="viewerAvatar" alt="" hidden><span id="viewerName"></span><button class="signout" id="signOutBtn" type="button" hidden>התנתקות</button></span>
-      <span class="save-state" id="saveState">הבחירות נשמרות בדפדפן הזה</span>
-      <span class="save-state" id="injStamp" hidden></span>
-    </div>
+    <div class="ticker" id="ticker" hidden></div>
   </header>
 
   <div class="layout">
@@ -1084,7 +1199,7 @@ function render() {
     }).join("");
     return `<tr class="${mine.has(p.id) ? "is-mine" : ""} ${taken.has(p.id) ? "is-taken" : ""} ${fav.has(p.id) ? "is-fav" : ""}">
       ${statRank ? `<td class="rank" style="color:var(--accent)">${statRank(best({ p, z }))}</td>` : ""}
-      ${posR ? posTd(posR, p) : `<td class="rank">${rank}</td>`}
+      ${posR ? posTd(posR, p) : `<td class="rank${rank <= 3 ? " top" : ""}">${rank}</td>`}
       ${nameCell(p)}
       <td>${p.age ?? "–"}</td><td>${p.gp}</td>${availCell(p)}<td>${fmt1(p.L.g.MIN)}</td>${cats}
       <td class="val">${z.total.toFixed(2)}</td><td class="val">${fmt1(p.F[m])}</td>
@@ -1116,7 +1231,7 @@ function nameCell(p) {
     : `${rk}${inj}${esc(p.team26)}`;
   const lab = DRAFT.labels.get(p.id);
   const chip = lab ? `<span class="pickchip" title="בחירה ${DRAFT.overall.get(p.id)} בדראפט">${lab}</span>` : "";
-  return `<td class="name"><div class="nc">${p.img ? `<img class="avatar" src="${p.img}" alt="" loading="lazy">` : `<span class="avatar"></span>`}<div class="nmeta"><div class="nline"><span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span>${injuryPill(p)}</div>${scheduleLine(p)}</div></div></td>`;
+  return `<td class="name" style="--tc:${teamTint(p.team26)}"><div class="nc">${p.img ? `<img class="avatar" src="${p.img}" alt="" loading="lazy">` : `<span class="avatar"></span>`}<div class="nmeta"><div class="nline"><span class="n">${esc(p.name)}</span>${chip}<span class="t">${esc(p.pos || "–")} · ${team}</span>${injuryPill(p)}</div>${scheduleLine(p)}</div></div></td>`;
 }
 
 // Availability: share of the 82 games played over the last three seasons he was in the league
@@ -1259,6 +1374,68 @@ function computeWeek() {
     }
   }
 }
+// The 30 teams' colours (primary, secondary): a thin strip by each player and the tonight ticker
+const TEAM_COLORS = {
+  ATL: ["#E03A3E", "#C1D32F"], BOS: ["#007A33", "#BA9653"], BKN: ["#000000", "#FFFFFF"], CHA: ["#1D1160", "#00788C"],
+  CHI: ["#CE1141", "#000000"], CLE: ["#860038", "#FDBB30"], DAL: ["#00538C", "#B8C4CA"], DEN: ["#0E2240", "#FEC524"],
+  DET: ["#C8102E", "#1D42BA"], GSW: ["#1D428A", "#FFC72C"], HOU: ["#CE1141", "#000000"], IND: ["#002D62", "#FDBB30"],
+  LAC: ["#C8102E", "#1D428A"], LAL: ["#552583", "#FDB927"], MEM: ["#5D76A9", "#12173F"], MIA: ["#98002E", "#F9A01B"],
+  MIL: ["#00471B", "#EEE1C6"], MIN: ["#0C2340", "#78BE20"], NOP: ["#0C2340", "#C8102E"], NYK: ["#006BB6", "#F58426"],
+  OKC: ["#007AC1", "#EF3B24"], ORL: ["#0077C0", "#C4CED4"], PHI: ["#006BB6", "#ED174C"], PHX: ["#1D1160", "#E56020"],
+  POR: ["#E03A3E", "#000000"], SAC: ["#5A2D81", "#63727A"], SAS: ["#C4CED4", "#000000"], TOR: ["#CE1141", "#000000"],
+  UTA: ["#002B5C", "#F9A01B"], WAS: ["#002B5C", "#E31837"],
+};
+const isDark = () => document.documentElement.dataset.theme !== "light";
+function luminance(hex) {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    .reduce((a, c, i) => a + c * [0.2126, 0.7152, 0.0722][i], 0);
+}
+const contrastOf = (a, b) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+// The team colour (primary, else secondary) that shows up on the current background
+function teamTint(t) {
+  const c = TEAM_COLORS[t];
+  if (!c) return "transparent";
+  const bg = isDark() ? "#0e1525" : "#ffffff";
+  return contrastOf(c[0], bg) >= 1.8 ? c[0] : c[1];
+}
+
+// Scoreboard: days to opening night (then the week of the season), games tonight, OUT / GTD
+function renderScoreboard() {
+  const now = new Date(), today = etDay(now);
+  const regular = GAMES.filter((g) => !g.pre).sort((a, b) => a.t - b.t);
+  const first = regular[0];
+  const tonight = GAMES.filter((g) => g.d === today).sort((a, b) => a.t - b.t);
+  const rostered = players.filter((p) => p.team26);
+  const out = rostered.filter((p) => p.hurt && p.hurt.s === "OUT").length;
+  const gtd = rostered.filter((p) => p.hurt && p.hurt.s !== "OUT").length;
+  const tile = (k, v, h, cls = "") => `<div class="tile"><div class="k">${k}</div><div class="v ${cls}">${v}</div><div class="h">${h}</div></div>`;
+  let season;
+  if (first && now < first.t) {
+    const days = Math.ceil((new Date(etDay(first.t) + "T12:00:00Z") - new Date(today + "T12:00:00Z")) / 864e5);
+    season = tile("OPENING NIGHT", days, `ימים · ${first.t.toLocaleDateString("he-IL", { day: "numeric", month: "numeric", timeZone: "Asia/Jerusalem" })}`);
+  } else if (first) {
+    const week = Math.floor((new Date(today + "T12:00:00Z") - new Date(etDay(first.t) + "T12:00:00Z")) / (7 * 864e5)) + 1;
+    season = tile("WEEK", week, "שבוע בעונה");
+  } else season = "";
+  $("scoreboard").innerHTML = season + tile("TONIGHT", tonight.length, tonight.some((g) => g.pre) ? "משחקי הכנה" : "משחקים") +
+    tile("OUT", out, "בחוץ", "red") + tile("GTD", gtd, "בספק");
+  const tk = $("ticker");
+  tk.hidden = !tonight.length;
+  const sw = (t) => { const c = TEAM_COLORS[t] || ["#888", "#555"]; return `<i class="sw" style="--c1:${c[0]};--c2:${c[1]}"></i>`; };
+  tk.innerHTML = `<span class="lbl">TONIGHT</span>` + tonight.map((g) =>
+    `<span class="game"><span class="tm">${sw(g.a)}${esc(g.a)}</span><span class="at">@</span><span class="tm">${sw(g.h)}${esc(g.h)}</span>` +
+    `<span class="time">${g.t.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" })}</span></span>`).join("");
+}
+function syncThemeBtn() { $("themeBtn").textContent = isDark() ? "☀" : "☾"; }
+$("themeBtn").addEventListener("click", () => {
+  const next = isDark() ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("fantasy-theme", next); } catch (e) {}
+  syncThemeBtn(); render();  // team strips pick the colour that shows on the new background
+});
+renderScoreboard(); syncThemeBtn();
+
 function scheduleLine(p) {
   if (!p.team26) return "";
   const e = TEAM_WEEK.get(p.team26) || { total: 0, played: 0, today: null };
@@ -1378,7 +1555,8 @@ function percentileHeat(values) {
     let lo = 0, hi = sorted.length;
     while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid] < v) lo = mid + 1; else hi = mid; }
     const pct = lo / (sorted.length - 1);
-    return `background:color-mix(in srgb, var(--accent) ${(pct * 42).toFixed(0)}%, transparent)`;
+    // Same green as "strong" on the main table, so one colour means "high" everywhere
+    return `background:color-mix(in srgb, var(--pos) ${(pct * 36).toFixed(0)}%, transparent)`;
   };
 }
 function renderAdv() {
@@ -1914,9 +2092,9 @@ function renderCmp() {
 
   out.innerHTML = `
     <div class="cmpsum">
-      <div class="card"><span class="k">קטגוריות (מתוך ${CATS.length - st.punts.size})</span><span class="v">${gen.wa} : ${gen.wb}</span><span class="k">${gen.wa === gen.wb ? "שוויון" : `${esc(lead(gen.wa, gen.wb))} מוביל`}</span></div>
-      <div class="card"><span class="k">Z</span><span class="v">${A.Z.toFixed(2)} : ${B.Z.toFixed(2)}</span><span class="k">${favor(A.Z - B.Z, (v) => v.toFixed(2))}</span></div>
-      <div class="card"><span class="k">FPTS ${per}${avg ? " לשחקן" : ""}</span><span class="v">${fmt1(A.FPTS)} : ${fmt1(B.FPTS)}</span><span class="k">${favor(A.FPTS - B.FPTS, fmt1)}</span></div>
+      <div class="card"><span class="k">קטגוריות (מתוך ${CATS.length - st.punts.size})</span><span class="v"><span class="num">${gen.wa}</span> : <span class="num">${gen.wb}</span></span><span class="k">${gen.wa === gen.wb ? "שוויון" : `${esc(lead(gen.wa, gen.wb))} מוביל`}</span></div>
+      <div class="card"><span class="k">Z</span><span class="v"><span class="num">${A.Z.toFixed(2)}</span> : <span class="num">${B.Z.toFixed(2)}</span></span><span class="k">${favor(A.Z - B.Z, (v) => v.toFixed(2))}</span></div>
+      <div class="card"><span class="k">FPTS ${per}${avg ? " לשחקן" : ""}</span><span class="v"><span class="num">${fmt1(A.FPTS)}</span> : <span class="num">${fmt1(B.FPTS)}</span></span><span class="k">${favor(A.FPTS - B.FPTS, fmt1)}</span></div>
       ${several ? `<div class="card"><span class="k">שחקנים</span><span class="v">${LA.length} : ${LB.length}</span><span class="k">${LA.length !== LB.length && !avg ? "צד עם יותר שחקנים צובר יותר" : "&nbsp;"}</span></div>` : ""}
     </div>
     <div class="cmpkey"><span><i style="background:var(--accent)"></i>${esc(nA)}</span><span><i style="background:var(--mine)"></i>${esc(nB)}</span></div>
